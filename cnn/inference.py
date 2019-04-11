@@ -81,7 +81,7 @@ model.load_weights( filename )
 ## Read in the input (X,Y) datasets
 ##----------------------------------
 
-input_dir = "/home/ubuntu/deep_crs_him8/input_data/"
+input_dir = "input_data/"
 
 y_file = input_dir + "crs.npy"
 x_file = input_dir + "input_" + str(args.channels) + "layer.npy"
