@@ -34,28 +34,28 @@ def GetModel( num_channels ):
     model = Sequential()
     model.add(BatchNormalization(axis=3, input_shape=(400, 400, num_channels)))
     # Size 400x400x3
-    model.add(Conv2D(32, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(32, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 200x200x32
-    model.add(Conv2D(64, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(64, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 100x100x64
-    model.add(Conv2D(128, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(128, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 50x50x128
-    model.add(Conv2D(256, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(256, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 25x25x256
-    model.add(Conv2DTranspose(128, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(128, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 50x50x128
-    model.add(Conv2DTranspose(64, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(64, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 100x100x64
-    model.add(Conv2DTranspose(32, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(32, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 200x200x32
-    model.add(Conv2DTranspose(1, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(1, 3, strides=2, activation='relu'))
     # Size 400x400x1
 
     model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
@@ -81,7 +81,7 @@ model.load_weights( filename )
 ## Read in the input (X,Y) datasets
 ##----------------------------------
 
-input_dir = "input_data/"
+input_dir = "input/"
 
 y_file = input_dir + "crs.npy"
 x_file = input_dir + "input_" + str(args.channels) + "layer.npy"

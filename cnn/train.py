@@ -1,7 +1,7 @@
-from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization, Conv2D, Conv2DTranspose
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, History
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, History, LearningRateScheduler
 from datetime import datetime
 import numpy as np
 import argparse
@@ -26,7 +26,7 @@ if args.arch != "kepler" and args.arch != "pascal" and args.arch != "volta":
 ## Read in the input (X,Y) datasets
 ##----------------------------------
 
-input_dir = "input_data/"
+input_dir = "input/"
 
 y_file = input_dir + "crs.npy"
 x_file = input_dir + "input_" + str(args.channels) + "layer.npy"
@@ -43,28 +43,28 @@ def GetModel( num_channels ):
     model = Sequential()
     model.add(BatchNormalization(axis=3, input_shape=(400, 400, num_channels)))
     # Size 400x400x3
-    model.add(Conv2D(32, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(32, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 200x200x32
-    model.add(Conv2D(64, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(64, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 100x100x64
-    model.add(Conv2D(128, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(128, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 50x50x128
-    model.add(Conv2D(256, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2D(256, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 25x25x256
-    model.add(Conv2DTranspose(128, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(128, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 50x50x128
-    model.add(Conv2DTranspose(64, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(64, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 100x100x64
-    model.add(Conv2DTranspose(32, 3, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(32, 3, strides=2, activation='relu'))
     model.add(BatchNormalization(axis=3))
     # Size 200x200x32
-    model.add(Conv2DTranspose(1, 5, strides=(2, 2), activation='relu', padding='same'))
+    model.add(Conv2DTranspose(1, 3, strides=2, activation='relu'))
     # Size 400x400x1
 
     model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
@@ -89,12 +89,21 @@ checkpoint = ModelCheckpoint( filename,
                               mode='min' )
 
 earlystop = EarlyStopping( min_delta=0.001,
-                           patience=4,
+                           patience=10,
                            mode='min' )
 
 history = History()
 
-my_callbacks = [checkpoint, earlystop, history]
+def step_decay(epoch):
+   if epoch<21:
+      lrate = 0.0001
+   else:
+      lrate = 0.00005
+   return lrate
+
+lrate = LearningRateScheduler(step_decay)
+
+my_callbacks = [checkpoint, earlystop, history, lrate]
 
 
 ##
@@ -102,10 +111,10 @@ my_callbacks = [checkpoint, earlystop, history]
 ##------------------------
 
 t1 = datetime.now()
-hist = model.fit( x, y, 
+hist = model.fit( x, y[:,:399,:399,:], 
                   batch_size=args.batch_size,
                   epochs=10000, 
-                  verbose=0, 
+                  verbose=2, 
                   validation_split=.25,
                   callbacks=my_callbacks, 
                   shuffle=True )
