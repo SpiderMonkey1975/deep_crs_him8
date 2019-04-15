@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-a', '--arch', type=str, default="volta", help="set the GPU architecture. Valid values are volta, pascal or kepler")
 parser.add_argument('-b', '--batch_size', type=int, default=32, help="set batch size to the GPU")
 parser.add_argument('-c', '--channels', type=int, default=3, help="number of channels in input data. Valid values are 3, 4, 5, 10")
+parser.add_argument('-n', '--num_trials', type=int, default=5, help="number of trials for training. Valid value is between 1 and 5")
 args = parser.parse_args()
 
 if args.channels != 3 and args.channels != 4 and args.channels != 5 and args.channels != 10:
@@ -21,6 +22,12 @@ if args.channels != 3 and args.channels != 4 and args.channels != 5 and args.cha
 
 if args.arch != "kepler" and args.arch != "pascal" and args.arch != "volta":
    args.arch = "volta"
+
+if args.num_trials<1:
+   args.num_trials = 1
+
+if args.num_trials>5:
+   args.num_trials = 5
 
 ##
 ## Read in the input (X,Y) datasets
@@ -105,29 +112,6 @@ lrate = LearningRateScheduler(step_decay)
 
 my_callbacks = [checkpoint, earlystop, history, lrate]
 
-
-##
-## Perform model training
-##------------------------
-
-t1 = datetime.now()
-hist = model.fit( x, y[:,:399,:399,:], 
-                  batch_size=args.batch_size,
-                  epochs=10000, 
-                  verbose=2, 
-                  validation_split=.25,
-                  callbacks=my_callbacks, 
-                  shuffle=True )
-training_time = (datetime.now()-t1 ).total_seconds()
-
-val_loss = hist.history['val_loss']
-min_val_loss = 10000000.0
-ind = -1
-for n in range(len(val_loss)):
-    if val_loss[n] < min_val_loss:
-       min_val_loss = val_loss[n]
-       ind = n
-
 print(" ")
 print(" ")
 print("=====================================================================================")
@@ -136,13 +120,36 @@ print("=========================================================================
 print(" ")
 print("   %s GPU architecture used" % args.arch)
 print("   %2d channels of satellite data used" % args.channels)
-print("   Training lasted for %2d epochs" % (len(val_loss)))
 print("   batch size of %3d images used" % args.batch_size)
-print(" ")
-print("   TRAINING OUTPUT")
-print("       minimum val_loss was %8.6f" % min_val_loss)
-print("       minimum val_loss occurred at epoch %2d" % ind)
-print("       training lasted for %7.1f seconds" % training_time)
-print(" ")
-print(" ")
 
+for n in range(args.num_trials):
+
+##
+## Perform model training
+##------------------------
+
+   t1 = datetime.now()
+   hist = model.fit( x, y[:,:399,:399,:], 
+                     batch_size=args.batch_size,
+                     epochs=100, 
+                     verbose=0, 
+                     validation_split=.25,
+                     callbacks=my_callbacks, 
+                     shuffle=True )
+   training_time = (datetime.now()-t1 ).total_seconds()
+
+   val_loss = hist.history['val_loss']
+   min_val_loss = 10000000.0
+   ind = -1
+   for n in range(len(val_loss)):
+       if val_loss[n] < min_val_loss:
+          min_val_loss = val_loss[n]
+          ind = n
+
+   print(" ")
+   print("   TRAINING OUTPUT")
+   print("       minimum val_loss was %8.6f" % min_val_loss)
+   print("       minimum val_loss occurred at epoch %2d" % ind)
+   print("       training lasted for %7.1f seconds" % training_time)
+
+print(" ")
