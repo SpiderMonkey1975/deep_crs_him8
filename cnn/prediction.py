@@ -9,7 +9,6 @@ import argparse, cnn
 ## Look for any user specified commandline arguments
 ##---------------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('-a', '--arch', type=str, default="pascal", help="set the GPU architecture. Valid values are volta, pascal or kepler")
 parser.add_argument('-b', '--batch_size', type=int, default=4, help="set batch size to the GPU")
 parser.add_argument('-c', '--channels', type=int, default=3, help="number of channels in input data. Valid values are 3, 4, 5, 10")
 parser.add_argument('-n', '--num_tries', type=int, default=5, help="number of inference tests. Minimum value of 5")
@@ -21,9 +20,6 @@ if args.channels != 3 and args.channels != 4 and args.channels != 5 and args.cha
 
 if args.num_tries < 5:
    args.num_tries = 5
-
-if args.arch != "kepler" and args.arch != "pascal" and args.arch != "volta":
-   args.arch = "pascal"
 
 if args.padding != "valid" and args.padding != "same":
    args.padding = "same"
@@ -48,7 +44,7 @@ model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['ma
 ##
 ## Load pre-trained model weights
 ##--------------------------------
-filename = "model_weights/" + args.arch + "/weights_" + str(args.channels) + "channels_" + args.padding + "_padding.h5"
+filename = "model_weights/weights_" + str(args.channels) + "channels_" + args.padding + "_padding.h5"
 model.load_weights( filename )
 
 ##
@@ -60,7 +56,6 @@ print("=========================================================================
 print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
-print("   %s GPU architecture used" % args.arch)
 print("   %2d channels of satellite data used" % args.channels)
 print("   batch size of %3d images used" % args.batch_size)
 print(" ")

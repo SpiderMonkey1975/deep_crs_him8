@@ -9,7 +9,6 @@ import argparse, cnn
 ##
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-a', '--arch', type=str, default="volta", help="set the GPU architecture. Valid values are volta, pascal or kepler")
 parser.add_argument('-p', '--padding', type=str, default="valid", help="set ipadding type for CNN. Valid values are valid or same")
 parser.add_argument('-b', '--batch_size', type=int, default=32, help="set batch size to the GPU")
 parser.add_argument('-c', '--channels', type=int, default=3, help="number of channels in input data. Valid values are 3, 4, 5, 10")
@@ -18,9 +17,6 @@ args = parser.parse_args()
 
 if args.channels != 3 and args.channels != 4 and args.channels != 5 and args.channels != 10:
    args.channels = 3
-
-if args.arch != "kepler" and args.arch != "pascal" and args.arch != "volta":
-   args.arch = "volta"
 
 if args.num_trials<1:
    args.num_trials = 1
@@ -60,7 +56,7 @@ model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['ma
 ## Set up the training of the model
 ##----------------------------------
 
-filename = "model_weights/" + args.arch + "/weights_" + str(args.channels) + "channels_" + args.padding + "_padding.h5"
+filename = "model_weights/weights_" + str(args.channels) + "channels_" + args.padding + "_padding.h5"
 checkpoint = ModelCheckpoint( filename, 
                               monitor='val_loss', 
                               save_best_only=True, 
@@ -80,7 +76,6 @@ print("=========================================================================
 print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
-print("   %s GPU architecture used" % args.arch)
 print("   %2d channels of satellite data used" % args.channels)
 print("   batch size of %3d images used" % args.batch_size)
 
