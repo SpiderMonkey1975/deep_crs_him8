@@ -7,13 +7,12 @@ Usage: python3 train.py
 '''
 
 import numpy as np
-import time
+import time,sys
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, Flatten, Reshape
 from tensorflow.keras.layers import Conv2D, Conv2DTranspose, UpSampling2D
-from tensorflow.keras.layers import LeakyReLU, Dropout
-from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import LeakyReLU, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam, RMSprop
 
 import matplotlib.pyplot as plt
@@ -82,9 +81,9 @@ class DCGAN(object):
         dropout = 0.4
         depth = 128 
         dim = 50 
-        # In: 1000
+        # In: 500
         # Out: dim x dim x depth
-        self.G.add(Dense(dim*dim*depth, input_dim=1000))
+        self.G.add(Dense(dim*dim*depth, input_dim=500))
         self.G.add(BatchNormalization(momentum=0.9))
         self.G.add(Activation('relu'))
         self.G.add(Reshape((dim, dim, depth)))
@@ -140,7 +139,7 @@ class CRS_DCGAN(object):
         self.img_cols = 400
         self.channel = 1
 
-        self.x_train = np.load( "../cnn/input/crs.npy" )
+        self.x_train = np.load( "../input/crs.npy" )
         self.x_train = self.x_train.reshape(-1, self.img_rows,\
         	self.img_cols, 1).astype(np.float32)
 
@@ -152,11 +151,11 @@ class CRS_DCGAN(object):
     def train(self, train_steps=2000, batch_size=256, save_interval=0):
         noise_input = None
         if save_interval>0:
-            noise_input = np.random.uniform(0.0, 50.0, size=[16, 1000])
+            noise_input = np.random.uniform(0.0, 50.0, size=[16, 500])
         for i in range(train_steps):
             images_train = self.x_train[np.random.randint(0,
                 self.x_train.shape[0], size=batch_size), :, :, :]
-            noise = np.random.uniform(0.0, 50.0, size=[batch_size, 1000])
+            noise = np.random.uniform(0.0, 50.0, size=[batch_size, 500])
             images_fake = self.generator.predict(noise)
             x = np.concatenate((images_train, images_fake))
             y = np.ones([2*batch_size, 1])
@@ -164,7 +163,7 @@ class CRS_DCGAN(object):
             d_loss = self.discriminator.train_on_batch(x, y)
 
             y = np.ones([batch_size, 1])
-            noise = np.random.uniform(0.0, 50.0, size=[batch_size, 1000])
+            noise = np.random.uniform(0.0, 50.0, size=[batch_size, 500])
             a_loss = self.adversarial.train_on_batch(noise, y)
             log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
             log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
@@ -175,12 +174,12 @@ class CRS_DCGAN(object):
                         noise=noise_input, step=(i+1))
 
     def plot_images(self, save2file=False, fake=True, samples=16, noise=None, step=0):
-        filename = 'mnist.png'
+        filename = 'crs.png'
         if fake:
             if noise is None:
-                noise = np.random.uniform(0.0, 50.0, size=[samples, 1000])
+                noise = np.random.uniform(0.0, 50.0, size=[samples, 500])
             else:
-                filename = "mnist_%d.png" % step
+                filename = "crs_%d.png" % step
             images = self.generator.predict(noise)
         else:
             i = np.random.randint(0, self.x_train.shape[0], samples)
@@ -203,7 +202,7 @@ class CRS_DCGAN(object):
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(train_steps=1000, batch_size=2, save_interval=500)
+    crs_dcgan.train(train_steps=100, batch_size=2, save_interval=500)
     timer.elapsed_time()
     crs_dcgan.plot_images(fake=True)
     crs_dcgan.plot_images(fake=False, save2file=True)
