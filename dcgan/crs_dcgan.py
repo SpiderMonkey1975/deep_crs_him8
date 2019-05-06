@@ -96,16 +96,6 @@ class DCGAN(object):
         self.G.add(Conv2D(256, 5, strides=1, activation="relu", padding='same'))
         self.G.add(Dropout(dropout))
 
-     #   self.G.add(Flatten())
-     #   self.G.add(Dense(dim*dim*depth))
-#        # In: 500
-#        # Out: dim x dim x depth
-#        self.G.add(Dense(dim*dim*depth, input_dim=500))
-      #  self.G.add(BatchNormalization(momentum=0.9))
-      #  self.G.add(Activation('relu'))
-      #  self.G.add(Reshape((dim, dim, depth)))
-      #  self.G.add(Dropout(dropout))
-
         # In: dim x dim x depth
         # Out: 2*dim x 2*dim x depth/2
         self.G.add(UpSampling2D())
@@ -262,7 +252,7 @@ class CRS_DCGAN(object):
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(train_steps=500, batch_size=2)
+    crs_dcgan.train(train_steps=10, batch_size=2)
     timer.elapsed_time()
     crs_dcgan.plot_images(fake=True)
     crs_dcgan.plot_images(fake=False)
