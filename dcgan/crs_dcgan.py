@@ -81,18 +81,30 @@ class DCGAN(object):
         self.G = Sequential()
         dropout = 0.4
         depth = 128 
-        dim = 50
+    #    dim = 50
 
-        self.G.add(InputLayer(input_shape=(25,25,))) 
-        self.G.add(Flatten())
-        self.G.add(Dense(dim*dim*depth))
+        input_shape = (self.img_rows, self.img_cols, self.channel)
+        self.G.add(Conv2D(32, 5, strides=2, input_shape=input_shape, activation="relu", padding='same'))
+        self.G.add(Dropout(dropout))
+
+        self.G.add(Conv2D(64, 3, strides=2, activation="relu", padding='same'))
+        self.G.add(Dropout(dropout))
+
+        self.G.add(Conv2D(128, 3, strides=2, activation="relu", padding='same'))
+        self.G.add(Dropout(dropout))
+
+        self.G.add(Conv2D(256, 5, strides=1, activation="relu", padding='same'))
+        self.G.add(Dropout(dropout))
+
+     #   self.G.add(Flatten())
+     #   self.G.add(Dense(dim*dim*depth))
 #        # In: 500
 #        # Out: dim x dim x depth
 #        self.G.add(Dense(dim*dim*depth, input_dim=500))
-        self.G.add(BatchNormalization(momentum=0.9))
-        self.G.add(Activation('relu'))
-        self.G.add(Reshape((dim, dim, depth)))
-        self.G.add(Dropout(dropout))
+      #  self.G.add(BatchNormalization(momentum=0.9))
+      #  self.G.add(Activation('relu'))
+      #  self.G.add(Reshape((dim, dim, depth)))
+      #  self.G.add(Dropout(dropout))
 
         # In: dim x dim x depth
         # Out: 2*dim x 2*dim x depth/2
@@ -154,11 +166,11 @@ class CRS_DCGAN(object):
         self.generator = self.DCGAN.generator()
 
     def train(self, train_steps=2000, batch_size=256):
-        noise_input = np.random.uniform(0.0, 10.0, size=[16, 25, 25])
+        noise_input = np.random.uniform(0.0, 10.0, size=[16, 400, 400, 1])
         for i in range(train_steps):
             images_train = self.x_train[np.random.randint(0,
                 self.x_train.shape[0], size=batch_size), :, :, :]
-            noise = np.random.uniform(0.0, 10.0, size=[batch_size, 25, 25])
+            noise = np.random.uniform(0.0, 10.0, size=[batch_size, 400, 400, 1])
             images_fake = self.generator.predict(noise)
             x = np.concatenate((images_train, images_fake))
             y = np.ones([2*batch_size, 1])
@@ -166,7 +178,7 @@ class CRS_DCGAN(object):
             d_loss = self.discriminator.train_on_batch(x, y)
 
             y = np.ones([batch_size, 1])
-            noise = np.random.uniform(0.0, 10.0, size=[batch_size, 25, 25])
+            noise = np.random.uniform(0.0, 10.0, size=[batch_size, 400, 400, 1])
             a_loss = self.adversarial.train_on_batch(noise, y)
             log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
             log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
@@ -175,7 +187,7 @@ class CRS_DCGAN(object):
     def plot_images(self, fake=True, samples=16):   
         if fake:
             filename = 'generated_rainfall.png'
-            noise = np.random.uniform(0.0, 10.0, size=[samples, 25, 25])
+            noise = np.random.uniform(0.0, 10.0, size=[samples, 400, 400, 1])
             images = self.generator.predict(noise)
         else:
             filename = 'true_rainfall.png'
@@ -198,7 +210,6 @@ class CRS_DCGAN(object):
                      181, 179, 178, 176, 174, 172, 171, 169, 167, 165, 164, 162, 160, 158, 157, 155, 153, 151, 150, 146], dtype = np.float)
 
         red = red / 255
-
         green = np.array([255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240, 239, 238,
                      237, 236, 235, 234, 233, 232, 231, 230, 229, 228, 227, 226, 225, 224, 223, 222, 221, 220,
                      218, 216, 214, 212, 210, 208, 206, 204, 202, 200, 197, 195, 193, 191, 189, 187, 185, 183,
@@ -215,7 +226,6 @@ class CRS_DCGAN(object):
                      26,  26,  26,  26,  25,  25,  25,  25,  24,  24,  24,  23,  23,  23,  23,  22,  22,  22, 22,  21], dtype = np.float)
 
         green = green / 255
-
         blue = np.array([255, 255, 255, 254, 254, 254, 254, 253, 253, 253, 253, 253, 252, 252, 252, 252, 252, 251,
                      251, 251, 251, 250, 250, 250, 250, 250, 249, 249, 249, 249, 249, 248, 248, 248, 248, 247,
                      247, 246, 245, 243, 242, 241, 240, 238, 237, 236, 235, 234, 232, 231, 230, 229, 228, 226,
@@ -232,7 +242,6 @@ class CRS_DCGAN(object):
                      33,  33,  32,  32,  31,  31,  31,  30,  30,  29,  29,  29,  28,  28,  27,  27,  27,  26, 26,  25], dtype = np.float)
 
         blue = blue / 255
-
         vals = np.ones((254, 4))
         vals[:, 0] = red
         vals[:, 1] = green
@@ -253,7 +262,7 @@ class CRS_DCGAN(object):
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(train_steps=100, batch_size=2)
+    crs_dcgan.train(train_steps=500, batch_size=2)
     timer.elapsed_time()
     crs_dcgan.plot_images(fake=True)
     crs_dcgan.plot_images(fake=False)
