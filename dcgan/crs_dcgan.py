@@ -32,7 +32,7 @@ class ElapsedTimer(object):
         print("Elapsed: %s " % self.elapsed(time.time() - self.start_time) )
 
 class DCGAN(object):
-    def __init__(self, img_rows=400, img_cols=400, channel=1):
+    def __init__(self, img_rows=400, img_cols=400, channel=3):
 
         self.img_rows = img_rows
         self.img_cols = img_cols
@@ -51,7 +51,7 @@ class DCGAN(object):
         dropout = 0.4
         # In: 28 x 28 x 1, depth = 1
         # Out: 14 x 14 x 1, depth=64
-        input_shape = (self.img_rows, self.img_cols, self.channel)
+        input_shape = (self.img_rows, self.img_cols, 1)
         self.D.add(Conv2D(depth*1, 5, strides=2, input_shape=input_shape, padding='same'))
         self.D.add(LeakyReLU(alpha=0.2))
         self.D.add(Dropout(dropout))
@@ -81,20 +81,24 @@ class DCGAN(object):
         self.G = Sequential()
         dropout = 0.4
         depth = 128 
-    #    dim = 50
 
-        input_shape = (self.img_rows, self.img_cols, self.channel)
-        self.G.add(Conv2D(32, 5, strides=2, input_shape=input_shape, activation="relu", padding='same'))
-        self.G.add(Dropout(dropout))
+        input_shape = (self.img_rows, self.img_cols, 1)
+        self.G.add(Conv2D(32, 5, strides=2, input_shape=input_shape, padding='same'))
+        self.G.add(BatchNormalization(momentum=0.9))
+        self.G.add(Activation('relu'))
+        #self.G.add(Dropout(dropout))
 
-        self.G.add(Conv2D(64, 3, strides=2, activation="relu", padding='same'))
-        self.G.add(Dropout(dropout))
+        self.G.add(Conv2D(64, 3, strides=2, padding='same'))
+        self.G.add(BatchNormalization(momentum=0.9))
+        self.G.add(Activation('relu'))
 
-        self.G.add(Conv2D(128, 3, strides=2, activation="relu", padding='same'))
-        self.G.add(Dropout(dropout))
+        self.G.add(Conv2D(128, 3, strides=2, padding='same'))
+        self.G.add(BatchNormalization(momentum=0.9))
+        self.G.add(Activation('relu'))
 
-        self.G.add(Conv2D(256, 5, strides=1, activation="relu", padding='same'))
-        self.G.add(Dropout(dropout))
+        self.G.add(Conv2D(256, 5, strides=1, padding='same'))
+        self.G.add(BatchNormalization(momentum=0.9))
+        self.G.add(Activation('relu'))
 
         # In: dim x dim x depth
         # Out: 2*dim x 2*dim x depth/2
@@ -144,7 +148,7 @@ class CRS_DCGAN(object):
     def __init__(self):
         self.img_rows = 400
         self.img_cols = 400
-        self.channel = 1
+        self.channel = 3
 
         self.x_train = np.load( "../input/crs.npy" )
         self.x_train = self.x_train.reshape(-1, self.img_rows,\
@@ -156,11 +160,12 @@ class CRS_DCGAN(object):
         self.generator = self.DCGAN.generator()
 
     def train(self, train_steps=2000, batch_size=256):
-        noise_input = np.random.uniform(0.0, 10.0, size=[16, 400, 400, 1])
+        noise_input = np.load( "../input/input_3layer.npy" )
         for i in range(train_steps):
-            images_train = self.x_train[np.random.randint(0,
-                self.x_train.shape[0], size=batch_size), :, :, :]
-            noise = np.random.uniform(0.0, 10.0, size=[batch_size, 400, 400, 1])
+            ind = np.random.randint(0,self.x_train.shape[0], size=batch_size)
+            channel_no = np.random.randint(0,self.channel, size=1)
+            images_train = self.x_train[ind, :, :, :]
+            noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
             images_fake = self.generator.predict(noise)
             x = np.concatenate((images_train, images_fake))
             y = np.ones([2*batch_size, 1])
@@ -168,20 +173,24 @@ class CRS_DCGAN(object):
             d_loss = self.discriminator.train_on_batch(x, y)
 
             y = np.ones([batch_size, 1])
-            noise = np.random.uniform(0.0, 10.0, size=[batch_size, 400, 400, 1])
+            ind = np.random.randint(0,self.x_train.shape[0], size=batch_size)
+            channel_no = np.random.randint(0,self.channel, size=1)
+            noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
             a_loss = self.adversarial.train_on_batch(noise, y)
             log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
             log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
             print(log_mesg)
 
     def plot_images(self, fake=True, samples=16):   
+        i = np.random.randint(0, self.x_train.shape[0], samples)
         if fake:
             filename = 'generated_rainfall.png'
-            noise = np.random.uniform(0.0, 10.0, size=[samples, 400, 400, 1])
+            noise_input = np.load( "../input/input_3layer.npy" )
+            channel_no = np.random.randint(0,self.channel, size=1)
+            noise = np.expand_dims( noise_input[ i,:,:,channel_no ], axis=3 )
             images = self.generator.predict(noise)
         else:
             filename = 'true_rainfall.png'
-            i = np.random.randint(0, self.x_train.shape[0], samples)
             images = self.x_train[i, :, :, :]
 
         red = np.array([255, 252, 250, 247, 244, 242, 239, 236, 234, 231, 229, 226, 223, 221, 218, 215, 213, 210,
@@ -252,7 +261,7 @@ class CRS_DCGAN(object):
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(train_steps=10, batch_size=2)
+    crs_dcgan.train(train_steps=5, batch_size=8)
     timer.elapsed_time()
     crs_dcgan.plot_images(fake=True)
     crs_dcgan.plot_images(fake=False)
