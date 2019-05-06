@@ -261,7 +261,7 @@ class CRS_DCGAN(object):
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(train_steps=5, batch_size=8)
+    crs_dcgan.train(train_steps=1500, batch_size=2)
     timer.elapsed_time()
     crs_dcgan.plot_images(fake=True)
     crs_dcgan.plot_images(fake=False)
