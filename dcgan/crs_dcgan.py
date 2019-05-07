@@ -15,8 +15,8 @@ from tensorflow.keras.layers import Conv2D, Conv2DTranspose, UpSampling2D
 from tensorflow.keras.layers import LeakyReLU, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam, RMSprop
 
-#import matplotlib.pyplot as plt
-#from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 class ElapsedTimer(object):
     def __init__(self):
@@ -32,7 +32,7 @@ class ElapsedTimer(object):
         print("Elapsed: %s " % self.elapsed(time.time() - self.start_time) )
 
 class DCGAN(object):
-    def __init__(self, img_rows=400, img_cols=400, channel=10):
+    def __init__(self, img_rows=400, img_cols=400, channel=3):
 
         self.img_rows = img_rows
         self.img_cols = img_cols
@@ -148,7 +148,7 @@ class CRS_DCGAN(object):
     def __init__(self):
         self.img_rows = 400
         self.img_cols = 400
-        self.channel = 10 
+        self.channel = 3 
 
         self.x_train = np.load( "../input/crs.npy" )
         self.x_train = self.x_train.reshape(-1, self.img_rows,\
@@ -162,28 +162,32 @@ class CRS_DCGAN(object):
     def train(self, batch_size=256):
         filename = "../input/input_" + str(self.channel) + "layer.npy"
         noise_input = np.load( filename )
+        y = np.ones([2*batch_size, 1])
+        y[batch_size:, :] = 0
+        y2 = np.ones([batch_size, 1])
         for channel_no in range(self.channel):
-            indicies = range(self.x_train.shape[0])
             print("channel %1d processing..." % (channel_no)) 
+
+            indicies = range(self.x_train.shape[0])
+            images_train = self.x_train[indicies, :, :, :]
+            noise = np.expand_dims( noise_input[ indicies,:,:,channel_no ], axis=3 )
+            images_fake = self.generator.predict( noise )
+
+            cnt = 0
             for i in range(0,self.x_train.shape[0],batch_size):
                 if i+batch_size > self.x_train.shape[0]:
                    break 
 
-                ind = indicies[ i:i+batch_size ]
-                images_train = self.x_train[ind, :, :, :]
-                noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
-                images_fake = self.generator.predict(noise)
-                x = np.concatenate((images_train, images_fake))
-                y = np.ones([2*batch_size, 1])
-                y[batch_size:, :] = 0
+                x = np.concatenate((images_train[i:i+batch_size], images_fake[i:i+batch_size]))
                 d_loss = self.discriminator.train_on_batch(x, y)
 
-                y = np.ones([batch_size, 1])
-                noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
-                a_loss = self.adversarial.train_on_batch(noise, y)
-                #log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
-                #log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
-                #print(log_mesg)
+                a_loss = self.adversarial.train_on_batch(noise[i:i+batch_size,:,:,:], y2)
+                if cnt == 10:
+                   log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
+                   log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
+                   print(log_mesg)
+                   cnt = 0
+                cnt = cnt + 1
 
     def plot_images(self, fake=True, samples=16):   
         i = np.random.randint(0, self.x_train.shape[0], samples)
@@ -249,23 +253,23 @@ class CRS_DCGAN(object):
         vals[:, 0] = red
         vals[:, 1] = green
         vals[:, 2] = blue
-#        newcmp = ListedColormap(vals)
+        newcmp = ListedColormap(vals)
 
-#        plt.figure(figsize=(10,10))
-#        for i in range(images.shape[0]):
-#            plt.subplot(4, 4, i+1)
-#            image = images[i, :, :, :]
-#            image = np.reshape(image, [self.img_rows, self.img_cols])
-#            plt.imshow(image, cmap=newcmp)
-#            plt.axis('off')
-#        plt.tight_layout()
-#        plt.savefig(filename)
-#        plt.close('all')
+        plt.figure(figsize=(10,10))
+        for i in range(images.shape[0]):
+            plt.subplot(4, 4, i+1)
+            image = images[i, :, :, :]
+            image = np.reshape(image, [self.img_rows, self.img_cols])
+            plt.imshow(image, cmap=newcmp)
+            plt.axis('off')
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close('all')
         
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(batch_size=64)
+    crs_dcgan.train(batch_size=2)
     timer.elapsed_time()
-#    crs_dcgan.plot_images(fake=True)
-#    crs_dcgan.plot_images(fake=False)
+    crs_dcgan.plot_images(fake=True)
+    crs_dcgan.plot_images(fake=False)
