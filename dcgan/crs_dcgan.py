@@ -32,7 +32,7 @@ class ElapsedTimer(object):
         print("Elapsed: %s " % self.elapsed(time.time() - self.start_time) )
 
 class DCGAN(object):
-    def __init__(self, img_rows=400, img_cols=400, channel=3):
+    def __init__(self, img_rows=400, img_cols=400, channel=10):
 
         self.img_rows = img_rows
         self.img_cols = img_cols
@@ -148,7 +148,7 @@ class CRS_DCGAN(object):
     def __init__(self):
         self.img_rows = 400
         self.img_cols = 400
-        self.channel = 3
+        self.channel = 10 
 
         self.x_train = np.load( "../input/crs.npy" )
         self.x_train = self.x_train.reshape(-1, self.img_rows,\
@@ -160,28 +160,30 @@ class CRS_DCGAN(object):
         self.generator = self.DCGAN.generator()
 
     def train(self, batch_size=256):
-        noise_input = np.load( "../input/input_3layer.npy" )
-        indicies = range(self.x_train.shape[0]) 
-        channel_no = 0
-        for i in range(0,self.x_train.shape[0],batch_size):
-            if i+batch_size > self.x_train.shape[0]:
-               break 
+        filename = "../input/input_" + str(self.channel) + "layer.npy"
+        noise_input = np.load( filename )
+        for channel_no in range(self.channel):
+            indicies = range(self.x_train.shape[0])
+            print("channel %1d processing..." % (channel_no)) 
+            for i in range(0,self.x_train.shape[0],batch_size):
+                if i+batch_size > self.x_train.shape[0]:
+                   break 
 
-            ind = indicies[ i:i+batch_size ]
-            images_train = self.x_train[ind, :, :, :]
-            noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
-            images_fake = self.generator.predict(noise)
-            x = np.concatenate((images_train, images_fake))
-            y = np.ones([2*batch_size, 1])
-            y[batch_size:, :] = 0
-            d_loss = self.discriminator.train_on_batch(x, y)
+                ind = indicies[ i:i+batch_size ]
+                images_train = self.x_train[ind, :, :, :]
+                noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
+                images_fake = self.generator.predict(noise)
+                x = np.concatenate((images_train, images_fake))
+                y = np.ones([2*batch_size, 1])
+                y[batch_size:, :] = 0
+                d_loss = self.discriminator.train_on_batch(x, y)
 
-            y = np.ones([batch_size, 1])
-            noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
-            a_loss = self.adversarial.train_on_batch(noise, y)
-            log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
-            log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
-            print(log_mesg)
+                y = np.ones([batch_size, 1])
+                noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
+                a_loss = self.adversarial.train_on_batch(noise, y)
+                #log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
+                #log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
+                #print(log_mesg)
 
     def plot_images(self, fake=True, samples=16):   
         i = np.random.randint(0, self.x_train.shape[0], samples)
@@ -263,7 +265,7 @@ class CRS_DCGAN(object):
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(batch_size=32)
+    crs_dcgan.train(batch_size=64)
     timer.elapsed_time()
 #    crs_dcgan.plot_images(fake=True)
 #    crs_dcgan.plot_images(fake=False)
