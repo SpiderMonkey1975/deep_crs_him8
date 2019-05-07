@@ -7,7 +7,7 @@ Usage: python3 train.py
 '''
 
 import numpy as np
-import time,sys
+import time,random
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, Flatten, Reshape, InputLayer
@@ -15,8 +15,8 @@ from tensorflow.keras.layers import Conv2D, Conv2DTranspose, UpSampling2D
 from tensorflow.keras.layers import LeakyReLU, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam, RMSprop
 
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+#import matplotlib.pyplot as plt
+#from matplotlib.colors import ListedColormap
 
 class ElapsedTimer(object):
     def __init__(self):
@@ -120,7 +120,7 @@ class DCGAN(object):
         # Out: 400 x 400 x 1 image [0.0,1.0] per pix
         self.G.add(Conv2DTranspose(1, 5, padding='same'))
         self.G.add(Activation('sigmoid'))
-        self.G.summary()
+#        self.G.summary()
         return self.G
 
     def discriminator_model(self):
@@ -159,11 +159,15 @@ class CRS_DCGAN(object):
         self.adversarial = self.DCGAN.adversarial_model()
         self.generator = self.DCGAN.generator()
 
-    def train(self, train_steps=2000, batch_size=256):
+    def train(self, batch_size=256):
         noise_input = np.load( "../input/input_3layer.npy" )
-        for i in range(train_steps):
-            ind = np.random.randint(0,self.x_train.shape[0], size=batch_size)
-            channel_no = np.random.randint(0,self.channel, size=1)
+        indicies = range(self.x_train.shape[0]) 
+        channel_no = 0
+        for i in range(0,self.x_train.shape[0],batch_size):
+            if i+batch_size > self.x_train.shape[0]:
+               break 
+
+            ind = indicies[ i:i+batch_size ]
             images_train = self.x_train[ind, :, :, :]
             noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
             images_fake = self.generator.predict(noise)
@@ -173,8 +177,6 @@ class CRS_DCGAN(object):
             d_loss = self.discriminator.train_on_batch(x, y)
 
             y = np.ones([batch_size, 1])
-            ind = np.random.randint(0,self.x_train.shape[0], size=batch_size)
-            channel_no = np.random.randint(0,self.channel, size=1)
             noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
             a_loss = self.adversarial.train_on_batch(noise, y)
             log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
@@ -245,23 +247,23 @@ class CRS_DCGAN(object):
         vals[:, 0] = red
         vals[:, 1] = green
         vals[:, 2] = blue
-        newcmp = ListedColormap(vals)
+#        newcmp = ListedColormap(vals)
 
-        plt.figure(figsize=(10,10))
-        for i in range(images.shape[0]):
-            plt.subplot(4, 4, i+1)
-            image = images[i, :, :, :]
-            image = np.reshape(image, [self.img_rows, self.img_cols])
-            plt.imshow(image, cmap=newcmp)
-            plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(filename)
-        plt.close('all')
+#        plt.figure(figsize=(10,10))
+#        for i in range(images.shape[0]):
+#            plt.subplot(4, 4, i+1)
+#            image = images[i, :, :, :]
+#            image = np.reshape(image, [self.img_rows, self.img_cols])
+#            plt.imshow(image, cmap=newcmp)
+#            plt.axis('off')
+#        plt.tight_layout()
+#        plt.savefig(filename)
+#        plt.close('all')
         
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(train_steps=1500, batch_size=2)
+    crs_dcgan.train(batch_size=32)
     timer.elapsed_time()
-    crs_dcgan.plot_images(fake=True)
-    crs_dcgan.plot_images(fake=False)
+#    crs_dcgan.plot_images(fake=True)
+#    crs_dcgan.plot_images(fake=False)
