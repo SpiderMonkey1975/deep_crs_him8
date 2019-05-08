@@ -162,26 +162,29 @@ class CRS_DCGAN(object):
     def train(self, batch_size=256):
         filename = "../input/input_" + str(self.channel) + "layer.npy"
         noise_input = np.load( filename )
+
         y = np.ones([2*batch_size, 1])
         y[batch_size:, :] = 0
         y2 = np.ones([batch_size, 1])
+
         for channel_no in range(self.channel):
+            indicies = np.arange(self.x_train.shape[0])
+            np.random.shuffle( indicies )
             print("channel %1d processing..." % (channel_no)) 
-
-            indicies = range(self.x_train.shape[0])
-            images_train = self.x_train[indicies, :, :, :]
-            noise = np.expand_dims( noise_input[ indicies,:,:,channel_no ], axis=3 )
-            images_fake = self.generator.predict( noise )
-
             cnt = 0
             for i in range(0,self.x_train.shape[0],batch_size):
                 if i+batch_size > self.x_train.shape[0]:
                    break 
 
-                x = np.concatenate((images_train[i:i+batch_size], images_fake[i:i+batch_size]))
+                ind = indicies[ i:i+batch_size ]
+                images_train = self.x_train[ind, :, :, :]
+                noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
+                images_fake = self.generator.predict(noise)
+                x = np.concatenate((images_train, images_fake))
                 d_loss = self.discriminator.train_on_batch(x, y)
 
-                a_loss = self.adversarial.train_on_batch(noise[i:i+batch_size,:,:,:], y2)
+                noise = np.expand_dims( noise_input[ ind,:,:,channel_no ], axis=3 )
+                a_loss = self.adversarial.train_on_batch(noise, y2)
                 if cnt == 10:
                    log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
                    log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
@@ -189,17 +192,17 @@ class CRS_DCGAN(object):
                    cnt = 0
                 cnt = cnt + 1
 
-    def plot_images(self, fake=True, samples=16):   
+    def plot_images(self, samples=16):   
         i = np.random.randint(0, self.x_train.shape[0], samples)
-        if fake:
-            filename = 'generated_rainfall.png'
-            noise_input = np.load( "../input/input_3layer.npy" )
-            channel_no = np.random.randint(0,self.channel, size=1)
-            noise = np.expand_dims( noise_input[ i,:,:,channel_no ], axis=3 )
-            images = self.generator.predict(noise)
-        else:
-            filename = 'true_rainfall.png'
-            images = self.x_train[i, :, :, :]
+        
+        fake_filename = 'generated_rainfall.png'
+        noise_input = np.load( "../input/input_3layer.npy" )
+        channel_no = np.random.randint(0,self.channel, size=1)
+        noise = np.expand_dims( noise_input[ i,:,:,channel_no ], axis=3 )
+        fake_images = self.generator.predict(noise)
+        
+        filename = 'true_rainfall.png'
+        images = self.x_train[i, :, :, :]
 
         red = np.array([255, 252, 250, 247, 244, 242, 239, 236, 234, 231, 229, 226, 223, 221, 218, 215, 213, 210,
                      207, 205, 202, 199, 197, 194, 191, 189, 186, 183, 181, 178, 176, 173, 170, 168, 165, 162,
@@ -265,11 +268,21 @@ class CRS_DCGAN(object):
         plt.tight_layout()
         plt.savefig(filename)
         plt.close('all')
+
+        plt.figure(figsize=(10,10))
+        for i in range(fake_images.shape[0]):
+            plt.subplot(4, 4, i+1)
+            image = fake_images[i, :, :, :]
+            image = np.reshape(image, [self.img_rows, self.img_cols])
+            plt.imshow(image, cmap=newcmp)
+            plt.axis('off')
+        plt.tight_layout()
+        plt.savefig(fake_filename)
+        plt.close('all')
         
 if __name__ == '__main__':
     crs_dcgan = CRS_DCGAN()
     timer = ElapsedTimer()
-    crs_dcgan.train(batch_size=2)
+    crs_dcgan.train(batch_size=64)
     timer.elapsed_time()
-    crs_dcgan.plot_images(fake=True)
-    crs_dcgan.plot_images(fake=False)
+    crs_dcgan.plot_images()
