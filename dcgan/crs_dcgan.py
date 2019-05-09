@@ -165,7 +165,6 @@ class CRS_DCGAN(object):
 
         y = np.ones([2*batch_size, 1])
         y[batch_size:, :] = 0
-        #y2 = np.ones([batch_size, 1])
 
         for channel_no in range(self.channel):
             indicies = np.arange(self.x_train.shape[0])
@@ -177,7 +176,6 @@ class CRS_DCGAN(object):
                    break 
 
                 ind = indicies[ i:i+batch_size ]
-                #images_train = self.x_train[ind, :, :, :]
                 reflectance_data = np.expand_dims( satellite_input[ ind,:,:,channel_no ], axis=3 )
                 images_fake = self.generator.predict( reflectance_data )
                 x = np.concatenate((self.x_train[ind,:,:,:], images_fake))
@@ -197,7 +195,6 @@ class CRS_DCGAN(object):
         fake_filename = 'generated_rainfall_channel' + str(channel_no) + '.png'
         input_file = "../input/input_" + str(self.channel) + "layer.npy"
         satellite_input = np.load( input_file )
-        #channel_no = np.random.randint(0,self.channel, size=1)
         reflectance_data = np.expand_dims( satellite_input[ i,:,:,channel_no ], axis=3 )
         fake_images = self.generator.predict(reflectance_data)
         
@@ -285,4 +282,3 @@ if __name__ == '__main__':
     timer = ElapsedTimer()
     crs_dcgan.train(batch_size=64)
     timer.elapsed_time()
-    #crs_dcgan.plot_images()
