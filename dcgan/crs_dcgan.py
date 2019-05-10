@@ -189,16 +189,15 @@ class CRS_DCGAN(object):
                 cnt = cnt + 1
             self.plot_images( channel_no=channel_no )
 
-    def plot_images(self, samples=16, channel_no=0):   
+    def plot_images(self, samples=5, channel_no=0):   
         i = np.random.randint(0, self.x_train.shape[0], samples)
         
-        fake_filename = 'generated_rainfall_channel' + str(channel_no) + '.png'
         input_file = "../input/input_" + str(self.channel) + "layer.npy"
         satellite_input = np.load( input_file )
         reflectance_data = np.expand_dims( satellite_input[ i,:,:,channel_no ], axis=3 )
         fake_images = self.generator.predict(reflectance_data)
         
-        filename = 'true_rainfall_channel' + str(channel_no) + '.png'
+        filename = 'rainfall_channel' + str(channel_no) + '.png'
         images = self.x_train[i, :, :, :]
 
         red = np.array([255, 252, 250, 247, 244, 242, 239, 236, 234, 231, 229, 226, 223, 221, 218, 215, 213, 210,
@@ -255,26 +254,30 @@ class CRS_DCGAN(object):
         vals[:, 2] = blue
         newcmp = ListedColormap(vals)
 
-        plt.figure(figsize=(10,10))
+        plt.figure(figsize=(12,4))
         for i in range(images.shape[0]):
-            plt.subplot(4, 4, i+1)
+            plt.subplot(2, 5, i+1)
             image = images[i, :, :, :]
             image = np.reshape(image, [self.img_rows, self.img_cols])
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(filename)
-        plt.close('all')
+            if i == 0:
+               plt.text( 0, 0, 'REAL IMAGES', fontsize=14 )
+            if i == 4:
+               plt.colorbar()
 
-        plt.figure(figsize=(10,10))
         for i in range(fake_images.shape[0]):
-            plt.subplot(4, 4, i+1)
+            plt.subplot(2, 5, i+6)
             image = fake_images[i, :, :, :]
             image = np.reshape(image, [self.img_rows, self.img_cols])
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
+            if i == 0:
+               plt.text( 0, 0, 'FAKE IMAGES', fontsize=14 )
+            if i == 4:
+               plt.colorbar()
         plt.tight_layout()
-        plt.savefig(fake_filename)
+        plt.savefig(filename)
         plt.close('all')
         
 if __name__ == '__main__':
