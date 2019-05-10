@@ -145,16 +145,16 @@ class DCGAN(object):
         return self.AM
 
 class CRS_DCGAN(object):
-    def __init__(self):
+    def __init__(self, channel=3):
         self.img_rows = 400
         self.img_cols = 400
-        self.channel = 3 
+        self.channel = channel
 
         self.x_train = np.load( "../input/crs.npy" )
         self.x_train = self.x_train.reshape(-1, self.img_rows,\
         	self.img_cols, 1).astype(np.float32)
 
-        self.DCGAN = DCGAN()
+        self.DCGAN = DCGAN(channel=self.channel)
         self.discriminator =  self.DCGAN.discriminator_model()
         self.adversarial = self.DCGAN.adversarial_model()
         self.generator = self.DCGAN.generator()
@@ -278,7 +278,7 @@ class CRS_DCGAN(object):
         plt.close('all')
         
 if __name__ == '__main__':
-    crs_dcgan = CRS_DCGAN()
+    crs_dcgan = CRS_DCGAN(channel=3)
     timer = ElapsedTimer()
     crs_dcgan.train(batch_size=64)
     timer.elapsed_time()
