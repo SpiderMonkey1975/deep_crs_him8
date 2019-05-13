@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
@@ -72,7 +73,7 @@ def plot_images( channel, real_images, fake_images ):
             if i == 4:
                plt.colorbar()
 
-        for i in range(fake_images.shape[0]):
+    for i in range(fake_images.shape[0]):
             plt.subplot(2, 5, i+6)
             image = fake_images[i, :, :, :]
             image = np.reshape(image, [img_rows, img_cols])
@@ -82,6 +83,6 @@ def plot_images( channel, real_images, fake_images ):
                plt.text( 0, 0, 'FAKE IMAGES', fontsize=14 )
             if i == 4:
                plt.colorbar()
-        plt.tight_layout()
-        plt.savefig(filename)
-        plt.close('all')
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close('all')

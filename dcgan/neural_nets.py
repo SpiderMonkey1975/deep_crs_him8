@@ -5,36 +5,37 @@ from tensorflow.keras.layers import LeakyReLU, Dropout, BatchNormalization
 
 def generator( img_rows, img_cols ):
     G = Sequential()
+    depth = 2 #32
 
     input_shape = (img_rows, img_cols, 1)
-    G.add(Conv2D(32, 5, strides=2, input_shape=input_shape, padding='same'))
+    G.add(Conv2D(depth, 5, strides=2, input_shape=input_shape, padding='same'))
     G.add(BatchNormalization(momentum=0.9))
     G.add(Activation('relu'))
 
-    G.add(Conv2D(64, 3, strides=2, padding='same'))
+    G.add(Conv2D(depth*2, 3, strides=2, padding='same'))
     G.add(BatchNormalization(momentum=0.9))
     G.add(Activation('relu'))
 
-    G.add(Conv2D(128, 3, strides=2, padding='same'))
+    G.add(Conv2D(depth*4, 3, strides=2, padding='same'))
     G.add(BatchNormalization(momentum=0.9))
     G.add(Activation('relu'))
 
-    G.add(Conv2D(256, 5, strides=1, padding='same'))
-    G.add(BatchNormalization(momentum=0.9))
-    G.add(Activation('relu'))
-
-    G.add(UpSampling2D())
-    G.add(Conv2DTranspose(int(depth/2), 5, padding='same'))
+    G.add(Conv2D(depth*8, 5, strides=1, padding='same'))
     G.add(BatchNormalization(momentum=0.9))
     G.add(Activation('relu'))
 
     G.add(UpSampling2D())
-    G.add(Conv2DTranspose(int(depth/4), 5, padding='same'))
+    G.add(Conv2DTranspose(depth*4, 5, padding='same'))
     G.add(BatchNormalization(momentum=0.9))
     G.add(Activation('relu'))
 
     G.add(UpSampling2D())
-    G.add(Conv2DTranspose(int(depth/8), 5, padding='same'))
+    G.add(Conv2DTranspose(depth*2, 5, padding='same'))
+    G.add(BatchNormalization(momentum=0.9))
+    G.add(Activation('relu'))
+
+    G.add(UpSampling2D())
+    G.add(Conv2DTranspose(depth, 5, padding='same'))
     G.add(BatchNormalization(momentum=0.9))
     G.add(Activation('relu'))
 
@@ -44,7 +45,7 @@ def generator( img_rows, img_cols ):
 
 def discriminator( img_rows, img_cols ):
     D = Sequential()
-    depth = 32 
+    depth = 2 #32 
     dropout = 0.4
         
     input_shape = (img_rows, img_cols, 1)
@@ -68,4 +69,3 @@ def discriminator( img_rows, img_cols ):
     D.add(Dense(1))
     D.add(Activation('sigmoid'))
     return D
-    

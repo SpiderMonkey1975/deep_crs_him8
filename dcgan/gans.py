@@ -28,7 +28,7 @@ if args.channels != 3 and args.channels != 10:
 BoM_data = np.load( "../input/crs.npy" )
 BoM_data = BoM_data.reshape( -1, img_rows, img_cols, 1 ).astype(np.float32)
 
-filename = "../input/input_" + str(args.channels) + "layer_train.npy"
+filename = "../input/input_" + str(args.channels) + "layer.npy"
 reflectance_data = np.load( filename )
 
 ##
@@ -52,7 +52,7 @@ AM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0001,decay=3e-8),
 ##
 
 labels = np.ones( [2*args.batch_size,1] )
-labels[ batch_size:,: ] = 0
+labels[ args.batch_size:,: ] = 0
 
 ##
 ## Perform batch-wise training over the GANs
@@ -77,7 +77,7 @@ for channel_no in range( args.channels ):
         np.random.shuffle( ind )
 
         d_loss = DM.train_on_batch( features[ ind,:,:,: ], labels[ ind,: ] )
-        a_loss = AM.train_on_batch( x, labels[:batch_size] )
+        a_loss = AM.train_on_batch( x, labels[:args.batch_size] )
 
         log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
         log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
