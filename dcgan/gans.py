@@ -51,8 +51,8 @@ AM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0001,decay=3e-8),
 ## Construct the label tensors for the GANs training
 ##
 
-labels = np.ones( [2*args.batch_size,1] )
-labels[ args.batch_size:,: ] = 0
+labels = np.zeros( [2*args.batch_size,1] )
+labels[ args.batch_size:,: ] = 1
 
 ##
 ## Perform batch-wise training over the GANs
@@ -61,6 +61,7 @@ labels[ args.batch_size:,: ] = 0
 for channel_no in range( args.channels ):
     print("channel %1d processing..." % (channel_no))
 
+    cnt = 0
     for i in range(0,BoM_data.shape[0],args.batch_size):
         if i+args.batch_size > BoM_data.shape[0]:
            break 
@@ -79,10 +80,13 @@ for channel_no in range( args.channels ):
         d_loss = DM.train_on_batch( features[ ind,:,:,: ], labels[ ind,: ] )
         a_loss = AM.train_on_batch( x, labels[:args.batch_size] )
 
-        log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
-        log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
-        print(log_mesg)
+        if cnt == 10:
+           log_mesg = "%d: [D loss: %f, acc: %f]" % (i, d_loss[0], d_loss[1])
+           log_mesg = "%s  [A loss: %f, acc: %f]" % (log_mesg, a_loss[0], a_loss[1])
+           print(log_mesg)
+           cnt = 0
+        cnt = cnt + 1
 
     ind = np.random.randint(0, BoM_data.shape[0], 5)
     x = np.expand_dims( reflectance_data[ ind,:,:,channel_no ], axis=3 )
-    plot_images( args.channels, reflectance_data[ ind,:,:,channel_no ], GN.predict( x ) )
+    plot_images( channel_no, reflectance_data[ ind,:,:,channel_no ], GN.predict( x ) )
