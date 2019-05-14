@@ -36,15 +36,18 @@ reflectance_data = np.load( filename )
 ## corresponding discriminator and adversarial models.
 ##
 
-GN = neural_nets.generator( img_rows, img_cols )
+#GN = neural_nets.generator( img_rows, img_cols )
+GN = neural_nets.generator_unet_model( img_rows, img_cols )
 
-DM = Sequential()
-DM.add( neural_nets.discriminator(img_rows, img_cols) )
+#DM = Sequential()
+#DM.add( neural_nets.discriminator(img_rows, img_cols) )
+DM = neural_nets.discriminator_model( img_rows, img_cols )
 DM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0002,decay=6e-8), metrics=['accuracy'] )
 
-AM = Sequential()
-AM.add( neural_nets.generator(img_rows, img_cols) )
-AM.add( neural_nets.discriminator(img_rows, img_cols) )
+#AM = Sequential()
+#AM.add( neural_nets.generator(img_rows, img_cols) )
+#AM.add( neural_nets.discriminator(img_rows, img_cols) )
+AM = neural_nets.adversarial_model( img_rows, img_cols )
 AM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0001,decay=3e-8), metrics=['accuracy'] )
 
 ##
