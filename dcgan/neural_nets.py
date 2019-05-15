@@ -106,18 +106,22 @@ def generator_unet_model( img_rows, img_cols ):
     conv1 = Conv2D(64, 3, strides=1, activation='relu', padding='same')(net)
 
     net = MaxPooling2D(2)(conv1)
+    net = BatchNormalization(axis=3)( net )
     net = Conv2D(128, 3, strides=1, activation='relu', padding='same')(net)
     conv2 = Conv2D(128, 3, strides=1, activation='relu', padding='same')(net)
 
     net = MaxPooling2D(2)(conv2)
+    net = BatchNormalization(axis=3)( net )
     net = Conv2D(256, 3, strides=1, activation='relu', padding='same')(net)
     conv3 = Conv2D(256, 3, strides=1, activation='relu', padding='same')(net)
 
     net = MaxPooling2D(2)(conv3)
+    net = BatchNormalization(axis=3)( net )
     net = Conv2D(512, 3, strides=1, activation='relu', padding='same')(net)
     conv4 = Conv2D(512, 3, strides=1, activation='relu', padding='same')(net)
 
     net = MaxPooling2D(2)(conv4)
+    net = BatchNormalization(axis=3)( net )
     net = Conv2D(1024, 3, strides=1, activation='relu', padding='same')(net)
     net = Conv2D(1024, 3, strides=1, activation='relu', padding='same')(net)
 
@@ -125,16 +129,19 @@ def generator_unet_model( img_rows, img_cols ):
     net = concatenate( [net,conv4],axis=3 )
     net = Conv2D(512, 3, strides=1, activation='relu', padding='same')(net)
     net = Conv2D(512, 3, strides=1, activation='relu', padding='same')(net)
+    net = BatchNormalization(axis=3)( net )
 
     net = UpSampling2D(2)(net)
     net = concatenate( [net,conv3],axis=3 )
     net = Conv2D(256, 3, strides=1, activation='relu', padding='same')(net)
     net = Conv2D(256, 3, strides=1, activation='relu', padding='same')(net)
+    net = BatchNormalization(axis=3)( net )
 
     net = UpSampling2D(2)(net)
     net = concatenate( [net,conv2],axis=3 )
     net = Conv2D(128, 3, strides=1, activation='relu', padding='same')(net)
     net = Conv2D(128, 3, strides=1, activation='relu', padding='same')(net)
+    net = BatchNormalization(axis=3)( net )
 
     net = UpSampling2D(2)(net)
     net = concatenate( [net,conv1],axis=3 )

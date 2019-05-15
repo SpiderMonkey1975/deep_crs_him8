@@ -92,4 +92,13 @@ for channel_no in range( args.channels ):
 
     ind = np.random.randint(0, BoM_data.shape[0], 5)
     x = np.expand_dims( reflectance_data[ ind,:,:,channel_no ], axis=3 )
-    plot_images( channel_no, reflectance_data[ ind,:,:,channel_no ], GN.predict( x ) )
+    fake_images = GN.predict( x )
+
+    real_images = BoM_data[ ind,:,:,: ]
+
+    for n in range(len(ind)):
+        mean_val = np.mean( real_images[n,:,:,:] )
+        std_dev = np.std( real_images[n,:,:,:] )
+        fake_images[n,:,:,:] = fake_images[n,:,:,:]*std_dev + mean_val
+
+    plot_images( channel_no, real_images, fake_images )

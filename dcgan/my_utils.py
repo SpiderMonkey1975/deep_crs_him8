@@ -1,11 +1,14 @@
+import matplotlib as mpl
+mpl.use('Agg')
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
 def plot_images( channel, real_images, fake_images ):
     filename = 'rainfall_channel' + str(channel) + '.png'
-    img_cols = 400
-    img_rows = 400
+    img_cols = real_images.shape[1] 
+    img_rows = real_images.shape[2]
 
     red = np.array([255, 252, 250, 247, 244, 242, 239, 236, 234, 231, 229, 226, 223, 221, 218, 215, 213, 210,
                      207, 205, 202, 199, 197, 194, 191, 189, 186, 183, 181, 178, 176, 173, 170, 168, 165, 162,
