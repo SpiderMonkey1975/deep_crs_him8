@@ -8,7 +8,7 @@ from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.layers import Input
 
 from my_utils import plot_images
-
+from neural_nets.unet import generator, discriminator_model, adversarial_model
 
 img_rows = 400
 img_cols = 400
@@ -41,15 +41,15 @@ reflectance_data = np.load( filename )
 ##
 
 input_layer = Input(shape = (img_rows, img_cols, 1))
-net = neural_nets.generator_unet( input_layer )
+net = generator( input_layer )
 with tf.device("/cpu:0"):
      GN = Model( inputs=input_layer, outputs=net )
      GN = multi_gpu_model( GN, gpus=4 )
 
-DM = neural_nets.discriminator_model( img_rows, img_cols )
+DM = discriminator_model( img_rows, img_cols )
 DM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0002,decay=6e-8), metrics=['accuracy'] )
 
-AM = neural_nets.adversarial_model( img_rows, img_cols )
+AM = adversarial_model( img_rows, img_cols )
 AM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0001,decay=3e-8), metrics=['accuracy'] )
 
 ##

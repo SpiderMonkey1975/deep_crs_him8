@@ -32,7 +32,7 @@ def discriminator_model( img_rows, img_cols ):
     net = Activation('sigmoid')(net)
     return Model( inputs=input_layer, outputs=net ) 
 
-def generator_unet( input_layer ):
+def generator( input_layer ):
     depth = 64
     net = Conv2D( 1, 3, strides=1, activation='relu', padding='same')(input_layer)
     net = Conv2D(depth, 3, strides=1, activation='relu', padding='same')(net)
@@ -89,7 +89,7 @@ def adversarial_model( img_rows, img_cols ):
     depth = 128 
     dropout = 0.4
     input_layer = Input(shape = (img_rows, img_cols, 1))
-    net = generator_unet( input_layer ) 
+    net = generator( input_layer ) 
         
     net = Conv2D(depth, 5, strides=2, padding='same')(net)
     net = LeakyReLU(alpha=0.2)(net)
