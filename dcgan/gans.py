@@ -1,14 +1,12 @@
 import argparse, neural_nets
 import numpy as np
-import tensorflow as tf
+from random import sample
 
-from tensorflow.keras.models import Sequential, Model
+#from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import RMSprop
-from tensorflow.keras.utils import multi_gpu_model
-from tensorflow.keras.layers import Input
 
 from my_utils import plot_images
-from neural_nets.unet import generator, discriminator_model, adversarial_model
+from neural_nets.unet import generator_model, discriminator_model, adversarial_model
 
 img_rows = 400
 img_cols = 400
@@ -40,23 +38,20 @@ reflectance_data = np.load( filename )
 ## corresponding discriminator and adversarial models.
 ##
 
-input_layer = Input(shape = (img_rows, img_cols, 1))
-net = generator( input_layer )
-with tf.device("/cpu:0"):
-     GN = Model( inputs=input_layer, outputs=net )
-     GN = multi_gpu_model( GN, gpus=4 )
+depth = 64
+GM = generator_model( img_rows, img_cols,depth )
 
-DM = discriminator_model( img_rows, img_cols )
-DM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0002,decay=6e-8), metrics=['accuracy'] )
+DM = discriminator_model( img_rows, img_cols, depth*2 )
+DM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0001,decay=6e-8), metrics=['accuracy'] )
 
-AM = adversarial_model( img_rows, img_cols )
-AM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.0001,decay=3e-8), metrics=['accuracy'] )
+AM = adversarial_model( img_rows, img_cols, depth )
+AM.compile( loss='binary_crossentropy', optimizer=RMSprop(lr=0.00005,decay=3e-8), metrics=['accuracy'] )
 
 ##
 ## Construct the label tensors for the GANs training
 ##
 
-labels = np.ones( [2*args.batch_size,1] )
+labels = np.zeros( [2*args.batch_size,1] )
 labels[ :args.batch_size,: ] = 1
 
 ##
@@ -68,21 +63,17 @@ for channel_no in range( args.channels ):
 
     cnt = 0
     for i in range(0,BoM_data.shape[0],args.batch_size):
-        if i+args.batch_size > BoM_data.shape[0]:
-           break 
+        if ( (i+args.batch_size)>=BoM_data.shape[0] ):
+           break
 
-        ind = np.arange( i,i+args.batch_size )
-        np.random.shuffle( ind )
+        idx = np.arange( i,i+args.batch_size )
+        np.random.shuffle( idx ) 
 
-        x = np.expand_dims( reflectance_data[ ind,:,:,channel_no ], axis=3 )
-        images_fake = GN.predict( x )
-        features = np.concatenate((BoM_data[ind,:,:,:], images_fake))
+        x = np.expand_dims( reflectance_data[ idx,:,:,channel_no ], axis=3 )
+        images_fake = GM.predict( x )
+        features = np.concatenate((images_fake, BoM_data[idx,:,:,:]))
 
-        # randomly sort the images in the input batch
-        ind = np.arange( 2*args.batch_size )
-        np.random.shuffle( ind )
-
-        d_loss = DM.train_on_batch( features[ ind,:,:,: ], labels[ ind,: ] )
+        d_loss = DM.train_on_batch( features, labels )
         a_loss = AM.train_on_batch( x, labels[args.batch_size:] )
 
         if cnt == 10:
@@ -106,7 +97,7 @@ for channel_no in range( args.channels ):
     ind = np.random.randint(0, BoM_data.shape[0], 5)
     x = np.expand_dims( reflectance_data[ ind,:,:,channel_no ], axis=3 )
 
-    fake_images = GN.predict( x )
+    fake_images = GM.predict( x )
     real_images = BoM_data[ ind,:,:,: ]
 
     for n in range(len(ind)):
