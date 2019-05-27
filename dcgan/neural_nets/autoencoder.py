@@ -48,7 +48,7 @@ def generator( input_layer, depth ):
     net = Conv2D(depth*4, 3, strides=2, activation='relu', padding='same')(net)
 
     net = BatchNormalization(axis=3)(net)
-    net = Conv2D(depth*8, 5, strides=2, activation='relu', padding='same'))
+    net = Conv2D(depth*8, 5, strides=2, activation='relu', padding='same')
 
     net = BatchNormalization(axis=3)(net)
     net = Conv2DTranspose(depth*4, 5, strides=2, activation='relu', padding='same')(net)

@@ -78,7 +78,8 @@ def plot_images( channel, real_images, fake_images ):
 
     for i in range(fake_images.shape[0]):
             plt.subplot(2, 5, i+6)
-            image = fake_images[ i,:,:,: ]
+            #image = fake_images[ i,:,:,: ]
+            image = fake_images[ i,:,: ]
             image = np.reshape(image, [img_rows, img_cols])
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
