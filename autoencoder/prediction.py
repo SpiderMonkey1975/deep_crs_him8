@@ -1,72 +1,52 @@
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import BatchNormalization, Conv2D, Conv2DTranspose
 from tensorflow.keras.optimizers import Adam
 from datetime import datetime
 import numpy as np
-import argparse, cnn
+import neural_nets 
 
-##
-## Look for any user specified commandline arguments
-##---------------------------------------------------
-parser = argparse.ArgumentParser()
-parser.add_argument('-b', '--batch_size', type=int, default=4, help="set batch size to the GPU")
-parser.add_argument('-c', '--channels', type=int, default=3, help="number of channels in input data. Valid values are 3, 4, 5, 10")
-parser.add_argument('-n', '--num_tries', type=int, default=5, help="number of inference tests. Minimum value of 5")
-parser.add_argument('-p', '--padding', type=str, default="same", help="set ipadding type for CNN. Valid values are valid or same")
-args = parser.parse_args()
-
-if args.channels != 3 and args.channels != 4 and args.channels != 5 and args.channels != 10:
-   args.channels = 3
-
-if args.num_tries < 5:
-   args.num_tries = 5
-
-if args.padding != "valid" and args.padding != "same":
-   args.padding = "same"
+from plotting_routines import compare_images
 
 ##
 ## Read in the input (X,Y) datasets
 ##----------------------------------
-x_file = "input/input_" + str(args.channels) + "layer.npy"
-x = np.load( x_file )
+x = np.load( "../input/input_3layer_test.npy" )
 
 ##
-## Form the neural network
-##-------------------------
-num_filters = 5
-if args.padding == "valid":
-   num_filters = 3
-
-model = cnn.cnn( args.channels, args.padding, num_filters )
-
+## Perform inference testing using the basic autoencoder neural network design
+##-----------------------------------------------------------------------------
+model = neural_nets.autoencoder()
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
+model.load_weights( "weights_3channels_basic_autoencoder.h5" )
+
+t1 = datetime.now()
+basic_output = model.predict( x, batch_size=32, verbose=0 )
+basic_inference_time = (datetime.now()-t1).total_seconds()
 
 ##
-## Load pre-trained model weights
-##--------------------------------
-filename = "model_weights/weights_" + str(args.channels) + "channels_" + args.padding + "_padding.h5"
-model.load_weights( filename )
+## Perform inference testing using the basic autoencoder neural network design
+##-----------------------------------------------------------------------------
+model = neural_nets.unet()
+model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
+model.load_weights( "weights_3channels_unet_autoencoder.h5" )
 
-##
-## Perform inference testing
-##---------------------------
+t1 = datetime.now()
+unet_output = model.predict( x, batch_size=20, verbose=0 )
+unet_inference_time = (datetime.now()-t1).total_seconds()
+
 print(" ")
 print(" ")
 print("=====================================================================================")
 print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
-print("   %2d channels of satellite data used" % args.channels)
-print("   batch size of %3d images used" % args.batch_size)
+print("   3 channels of satellite data used")
 print(" ")
-print("   PREDICTION OUTPUT: trial    time")
-
-for n in range(args.num_tries):
-    t1 = datetime.now()
-    ipredictions = model.predict( x, batch_size=args.batch_size, verbose=0 )
-    inference_time = (datetime.now()-t1).total_seconds()
-    print("                         %1d       %5.1f" % (n,inference_time) )
-    
-print(" ")
+print("   PREDICTION TIMINGS (in seconds):")
+print("   basic autoencoder - %4.3f" % basic_inference_time)
+print("   u-net autoencoder - %4.3f" % unet_inference_time)
 print(" ")
 
+##
+## Output a visual comparison between the two autoencoder designs and the CRS output
+##
+crs_output = np.load( "../input/crs_test.npy" )
+compare_images( crs_output[:5,:,:], basic_output[:5,:,:], unet_output[:5,:,:] )

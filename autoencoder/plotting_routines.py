@@ -5,10 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-def plot_images( real_images, fake_images ):
-    filename = 'rainfall_3channels_regression.png'
-    img_cols = real_images.shape[1] 
-    img_rows = real_images.shape[2]
+def create_colormap():
 
     red = np.array([255, 252, 250, 247, 244, 242, 239, 236, 234, 231, 229, 226, 223, 221, 218, 215, 213, 210,
                      207, 205, 202, 199, 197, 194, 191, 189, 186, 183, 181, 178, 176, 173, 170, 168, 165, 162,
@@ -63,7 +60,14 @@ def plot_images( real_images, fake_images ):
     vals[:, 1] = green
     vals[:, 2] = blue
     newcmp = ListedColormap(vals)
+    return newcmp
 
+def plot_images( real_images, fake_images, net_type ):
+    newcmp = create_colormap()
+    
+    filename = 'rainfall_3channels_regression_' + net_type + '.png'
+    img_cols = real_images.shape[1] 
+    img_rows = real_images.shape[2]
     plt.figure(figsize=(12,4))
     for i in range(real_images.shape[0]):
             plt.subplot(2, 5, i+1)
@@ -72,19 +76,64 @@ def plot_images( real_images, fake_images ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'CRS MODEL OUTPUT', fontsize=14 )
+               plt.text( 0, 0, 'CRS Model Output', fontsize=14 )
             if i == 4:
                plt.colorbar()
 
     for i in range(fake_images.shape[0]):
             plt.subplot(2, 5, i+6)
-            #image = fake_images[ i,:,:,: ]
             image = fake_images[ i,:,: ]
             image = np.reshape(image, [img_rows, img_cols])
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'REGRESSION MODEL OUTPUT', fontsize=14 )
+                if net_type == 'basic':
+                   plt.text( 0, 0, 'Basic Autoencoder Output', fontsize=14 )
+                else:
+                   plt.text( 0, 0, 'U-Net Autoencoder Output', fontsize=14 )
+            if i == 4:
+               plt.colorbar()
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close('all')
+
+def compare_images( crs_output, basic_output, unet_output ):
+    newcmp = create_colormap()
+
+    filename = 'rainfall_3channels_regression_comparison.png'
+    img_cols = crs_output.shape[1]
+    img_rows = crs_output.shape[2]
+    plt.figure(figsize=(12,6))
+    for i in range(crs_output.shape[0]):
+            plt.subplot(3, 5, i+1)
+            image = crs_output[ i,:,: ]
+            image = np.reshape(image, [img_rows,img_cols])
+            plt.imshow(image, cmap=newcmp)
+            plt.axis('off')
+            if i == 0:
+               plt.text( 0, 0, 'CRS Model Output', fontsize=14 )
+            if i == 4:
+               plt.colorbar()
+
+    for i in range(basic_output.shape[0]):
+            plt.subplot(3, 5, i+6)
+            image = basic_output[ i,:,: ]
+            image = np.reshape(image, [img_rows, img_cols])
+            plt.imshow(image, cmap=newcmp)
+            plt.axis('off')
+            if i == 0:
+               plt.text( 0, 0, 'Basic Autoencoder Output', fontsize=14 )
+            if i == 4:
+               plt.colorbar()
+
+    for i in range(unet_output.shape[0]):
+            plt.subplot(3, 5, i+11)
+            image = unet_output[ i,:,: ]
+            image = np.reshape(image, [img_rows, img_cols])
+            plt.imshow(image, cmap=newcmp)
+            plt.axis('off')
+            if i == 0:
+               plt.text( 0, 0, 'U-Net Autoencoder Output', fontsize=14 )
             if i == 4:
                plt.colorbar()
     plt.tight_layout()
