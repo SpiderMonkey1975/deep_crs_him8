@@ -89,7 +89,7 @@ def generator( input_layer, depth ):
     return net
 
 def generator_model( img_rows, img_cols, depth ):
-    input_layer = Input(shape = (img_rows, img_cols, 1))
+    input_layer = Input(shape = (img_rows, img_cols, 3))
     net = generator( input_layer, depth )
     with tf.device("/cpu:0"):
          model = Model( inputs=input_layer, outputs=net )
@@ -99,7 +99,7 @@ def generator_model( img_rows, img_cols, depth ):
 def adversarial_model( img_rows, img_cols, depth ):
 
     dropout = 0.4
-    input_layer = Input(shape = (img_rows, img_cols, 1))
+    input_layer = Input(shape = (img_rows, img_cols, 3))
     net = generator( input_layer, depth ) 
     net = discriminator( net, depth*2 ) 
         

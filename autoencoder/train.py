@@ -1,7 +1,7 @@
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from datetime import datetime
-from my_utils import plot_images
+from plotting_routines import plot_images
 
 import numpy as np
 import argparse, neural_nets
@@ -12,7 +12,11 @@ import argparse, neural_nets
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--batch_size', type=int, default=32, help="set batch size to the GPU")
+parser.add_argument('-n', '--neural_net', type=str, default='basic', help="set neural network design for autoencoder. Valid values are basic and unet")
 args = parser.parse_args()
+
+if args.neural_net!='basic' and args.neural_net!='unet':
+    args.neural_net = 'basic'
 
 ##
 ## Read in the input (X,Y) datasets
@@ -25,15 +29,17 @@ y = np.load( "../input/crs_train.npy" )[:,:,:,None]
 ## Form the neural network
 ##
 
-#model = neural_nets.autoencoder()
-model = neural_nets.unet()
+if args.neural_net == 'basic':
+    model = neural_nets.autoencoder()
+else:
+    model = neural_nets.unet()
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
 
 ##
 ## Set up the training of the model
 ##
 
-filename = "weights_3channels.h5"
+filename = "weights_3channels_" + args.neural_net + "_autoencoder.h5"
 checkpoint = ModelCheckpoint( filename, 
                               monitor='val_loss', 
                               save_best_only=True, 
@@ -75,6 +81,7 @@ print("=========================================================================
 print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
+print("   %s autoencoder neural network design used" % args.neural_net)
 print("   3 channels of satellite data used")
 print("   batch size of %3d images used" % args.batch_size)
 print(" ")
@@ -107,6 +114,5 @@ print(" ")
 ##
 
 idx = np.random.choice( real_images.shape[0], 5 ) 
-real_images = real_images[ idx,:,: ]
 fake_images = model.predict( reflectance_data[ idx,:,:,: ] )
-plot_images( real_images, fake_images )
+plot_images( real_images[ idx,:,: ], fake_images, args.neural_net )
