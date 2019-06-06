@@ -62,10 +62,10 @@ def create_colormap():
     newcmp = ListedColormap(vals)
     return newcmp
 
-def plot_images( real_images, fake_images, net_type ):
+def plot_images( real_images, fake_images, net_type, num_filters ):
     newcmp = create_colormap()
     
-    filename = 'rainfall_3channels_regression_' + net_type + '.png'
+    filename = 'rainfall_regression_' + net_type + '_' + str(num_filters) + 'filters.png'
     img_cols = real_images.shape[1] 
     img_rows = real_images.shape[2]
     plt.figure(figsize=(12,4))
@@ -87,7 +87,7 @@ def plot_images( real_images, fake_images, net_type ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-                if net_type == 'basic':
+                if net_type == 'basic_autoencoder':
                    plt.text( 0, 0, 'Basic Autoencoder Output', fontsize=14 )
                 else:
                    plt.text( 0, 0, 'U-Net Autoencoder Output', fontsize=14 )
@@ -97,10 +97,10 @@ def plot_images( real_images, fake_images, net_type ):
     plt.savefig(filename)
     plt.close('all')
 
-def compare_images( crs_output, basic_output, unet_output ):
+def compare_images( crs_output, basic_output, unet_output, num_filters ):
     newcmp = create_colormap()
 
-    filename = 'rainfall_3channels_regression_comparison.png'
+    filename = 'rainfall_regression_comparison_' + str(num_filters) + 'filters.png'
     img_cols = crs_output.shape[1]
     img_rows = crs_output.shape[2]
     plt.figure(figsize=(12,6))
@@ -111,7 +111,7 @@ def compare_images( crs_output, basic_output, unet_output ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'CRS Model Output', fontsize=14 )
+               plt.text( 0, 0, 'CRS Model', fontsize=14 )
             if i == 4:
                plt.colorbar()
 
@@ -122,7 +122,7 @@ def compare_images( crs_output, basic_output, unet_output ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'Basic Autoencoder Output', fontsize=14 )
+               plt.text( 0, 0, 'Basic Autoencoder', fontsize=14 )
             if i == 4:
                plt.colorbar()
 
@@ -133,7 +133,7 @@ def compare_images( crs_output, basic_output, unet_output ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'U-Net Autoencoder Output', fontsize=14 )
+               plt.text( 0, 0, 'U-Net', fontsize=14 )
             if i == 4:
                plt.colorbar()
     plt.tight_layout()

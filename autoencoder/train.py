@@ -11,12 +11,14 @@ import argparse, neural_nets
 ##
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-g', '--num_gpu', type=int, default=1, help="set number of GPUs to be used for training")
+parser.add_argument('-f', '--num_filter', type=int, default=32, help="set initial number of filters used in CNN layers for the neural networks")
 parser.add_argument('-b', '--batch_size', type=int, default=32, help="set batch size to the GPU")
-parser.add_argument('-n', '--neural_net', type=str, default='basic', help="set neural network design for autoencoder. Valid values are basic and unet")
+parser.add_argument('-n', '--neural_net', type=str, default='basic_autoencoder', help="set neural network design. Valid values are basic_autoencoder and unet")
 args = parser.parse_args()
 
-if args.neural_net!='basic' and args.neural_net!='unet':
-    args.neural_net = 'basic'
+if args.neural_net!='basic_autoencoder' and args.neural_net!='unet':
+    args.neural_net = 'basic_autoencoder'
 
 ##
 ## Read in the input (X,Y) datasets
@@ -29,17 +31,19 @@ y = np.load( "../input/crs_train.npy" )[:,:,:,None]
 ## Form the neural network
 ##
 
-if args.neural_net == 'basic':
-    model = neural_nets.autoencoder()
+if args.neural_net == 'basic_autoencoder':
+    model = neural_nets.autoencoder( args.num_filter, args.num_gpu )
 else:
-    model = neural_nets.unet()
+    model = neural_nets.unet( args.num_filter, args.num_gpu )
+    if args.batch_size > 20:
+       args.batch_size = 20
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
 
 ##
 ## Set up the training of the model
 ##
 
-filename = "weights_3channels_" + args.neural_net + "_autoencoder.h5"
+filename = "model_weights_" + args.neural_net + "_" + str(args.num_filter) + "filters.h5"
 checkpoint = ModelCheckpoint( filename, 
                               monitor='val_loss', 
                               save_best_only=True, 
@@ -81,7 +85,7 @@ print("=========================================================================
 print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
-print("   %s autoencoder neural network design used" % args.neural_net)
+print("   %s neural network design used with %3d initial filters used in CNN layers" % (args.neural_net,args.num_filter))
 print("   3 channels of satellite data used")
 print("   batch size of %3d images used" % args.batch_size)
 print(" ")
@@ -113,6 +117,6 @@ print(" ")
 ## Output some visual comparisons
 ##
 
-idx = np.random.choice( real_images.shape[0], 5 ) 
-fake_images = model.predict( reflectance_data[ idx,:,:,: ] )
-plot_images( real_images[ idx,:,: ], fake_images, args.neural_net )
+#idx = np.random.choice( real_images.shape[0], 5 ) 
+#fake_images = model.predict( reflectance_data[ idx,:,:,: ] )
+#plot_images( real_images[ idx,:,: ], fake_images, args.neural_net, args.num_filter )
