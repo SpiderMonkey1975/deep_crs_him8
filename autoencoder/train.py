@@ -2,6 +2,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from datetime import datetime
 from plotting_routines import plot_images
+from tiramisu_net import Tiramisu
 
 import numpy as np
 import argparse, neural_nets
@@ -14,10 +15,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-g', '--num_gpu', type=int, default=1, help="set number of GPUs to be used for training")
 parser.add_argument('-f', '--num_filter', type=int, default=32, help="set initial number of filters used in CNN layers for the neural networks")
 parser.add_argument('-b', '--batch_size', type=int, default=32, help="set batch size to the GPU")
-parser.add_argument('-n', '--neural_net', type=str, default='basic_autoencoder', help="set neural network design. Valid values are basic_autoencoder and unet")
+parser.add_argument('-n', '--neural_net', type=str, default='basic_autoencoder', help="set neural network design. Valid values are basic_autoencoder, unet and tiramisu")
 args = parser.parse_args()
 
-if args.neural_net!='basic_autoencoder' and args.neural_net!='unet':
+if args.neural_net!='basic_autoencoder' and args.neural_net!='unet' and args.neural_net!='tiramisu':
     args.neural_net = 'basic_autoencoder'
 
 ##
@@ -32,8 +33,15 @@ y = np.load( "../input/crs_train.npy" )[:,:,:,None]
 ##
 
 if args.neural_net == 'basic_autoencoder':
-    model = neural_nets.autoencoder( args.num_filter, args.num_gpu )
-else:
+   model = neural_nets.autoencoder( args.num_filter, args.num_gpu )
+ 
+if args.neural_net == 'tiramisu':
+   model = Tiramisu( input_shape=(400,400,3),
+                     n_filters_first_conv=args.num_filter,
+                     n_pool = 2,
+                     n_layers_per_block = [4,5,7,5,4] ) 
+
+if args.neural_net == 'unet':
     model = neural_nets.unet( args.num_filter, args.num_gpu )
     if args.batch_size > 20:
        args.batch_size = 20
@@ -63,7 +71,7 @@ my_callbacks = [checkpoint, earlystop, history]
 
 t1 = datetime.now()
 hist = model.fit( x, y, 
-                  batch_size=args.batch_size,
+                  batch_size=args.batch_size*args.num_gpu,
                   epochs=100, 
                   verbose=2, 
                   validation_split=.25,
@@ -95,28 +103,3 @@ print("       minimum val_loss occurred at epoch %2d" % ind)
 print("       training lasted for %7.1f seconds" % training_time)
 print(" ")
 
-##
-## Perform model evaluation
-##
-
-reflectance_data = np.load( "../input/input_3layer_test.npy" )
-real_images = np.load( "../input/crs_test.npy" )[:,:,:,None]
-
-print("   EVALUATION OUTPUT")
-
-t1 = datetime.now()
-score = model.evaluate( reflectance_data, real_images, batch_size=args.batch_size, verbose=0 )
-inference_time = (datetime.now()-t1).total_seconds()
-print("       inference took %5.1f seconds" % inference_time )
-print("       mean square error was %12.10f" % score[1] )
-
-print(" ")
-print(" ")
-
-##
-## Output some visual comparisons
-##
-
-#idx = np.random.choice( real_images.shape[0], 5 ) 
-#fake_images = model.predict( reflectance_data[ idx,:,:,: ] )
-#plot_images( real_images[ idx,:,: ], fake_images, args.neural_net, args.num_filter )
