@@ -13,12 +13,14 @@ num_gpu = 1
 
 ##
 ## Read in the input (X,Y) datasets
-##----------------------------------
+##
+
 x = np.load( "../input/input_3layer_test.npy" )
 
 ##
 ## Perform inference testing using the basic autoencoder neural network design
-##-----------------------------------------------------------------------------
+##
+
 model = neural_nets.autoencoder( args.num_filter, num_gpu )
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
 
@@ -31,7 +33,8 @@ basic_inference_time = (datetime.now()-t1).total_seconds()
 
 ##
 ## Perform inference testing using the basic autoencoder neural network design
-##-----------------------------------------------------------------------------
+##
+
 model = neural_nets.unet( args.num_filter, num_gpu )
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
 
@@ -59,5 +62,64 @@ print(" ")
 ##
 ## Output a visual comparison between the two autoencoder designs and the CRS output
 ##
+
 crs_output = np.load( "../input/crs_test.npy" )
 compare_images( crs_output[:5,:,:], basic_output[:5,:,:], unet_output[:5,:,:], args.num_filter )
+
+##
+## Perform a pixel-by-pixel accuracy check. Determine # of pixels with less than 5% difference
+## between the CRS Model and autoencoder outputs
+##
+
+basic_accuracy = 0.0
+unet_accuracy = 0.0
+
+for n in range(crs_output.shape[0]):
+
+    cnt = 0.0
+    cnt2 = 0.0
+
+    for i in range(400):
+        for j in range(400):
+            if abs(crs_output[n,i,j]-basic_output[n,i,j]) < 0.05:
+               cnt = cnt + 1.0
+            if abs(crs_output[n,i,j]-unet_output[n,i,j]) < 0.05:
+               cnt2 = cnt2 + 1.0
+
+    basic_accuracy = basic_accuracy + (cnt/160000)
+    unet_accuracy = unet_accuracy + (cnt2/160000)
+
+basic_accuracy = (basic_accuracy / crs_output.shape[0]) * 100.0
+unet_accuracy = (unet_accuracy / crs_output.shape[0]) * 100.0
+
+print("   PREDICTION ACCURACY (within 5% tolerance):")
+print("   basic autoencoder - %5.2f" % basic_accuracy)
+print("   u-net autoencoder - %5.2f" % unet_accuracy)
+print(" ")
+
+basic_accuracy = 0.0
+unet_accuracy = 0.0
+
+for n in range(crs_output.shape[0]):
+
+    cnt = 0.0
+    cnt2 = 0.0
+
+    for i in range(400):
+        for j in range(400):
+            if abs(crs_output[n,i,j]-basic_output[n,i,j]) < 0.05:
+               cnt = cnt + 1.0
+            if abs(crs_output[n,i,j]-unet_output[n,i,j]) < 0.05:
+               cnt2 = cnt2 + 1.0
+
+    basic_accuracy = basic_accuracy + (cnt/160000)
+    unet_accuracy = unet_accuracy + (cnt2/160000)
+
+basic_accuracy = (basic_accuracy / crs_output.shape[0]) * 100.0
+unet_accuracy = (unet_accuracy / crs_output.shape[0]) * 100.0
+
+print("   PREDICTION ACCURACY (within 2% tolerance):")
+print("   basic autoencoder - %5.2f" % basic_accuracy)
+print("   u-net autoencoder - %5.2f" % unet_accuracy)
+print(" ")
+
