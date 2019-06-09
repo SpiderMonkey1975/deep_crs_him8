@@ -97,15 +97,15 @@ def plot_images( real_images, fake_images, net_type, num_filters ):
     plt.savefig(filename)
     plt.close('all')
 
-def compare_images( crs_output, basic_output, unet_output, num_filters ):
+def compare_images( crs_output, basic_output, unet_output, tiramisu_output, filename ):
     newcmp = create_colormap()
 
     filename = 'rainfall_regression_comparison_' + str(num_filters) + 'filters.png'
     img_cols = crs_output.shape[1]
     img_rows = crs_output.shape[2]
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(12,8))
     for i in range(crs_output.shape[0]):
-            plt.subplot(3, 5, i+1)
+            plt.subplot(4, 5, i+1)
             image = crs_output[ i,:,: ]
             image = np.reshape(image, [img_rows,img_cols])
             plt.imshow(image, cmap=newcmp)
@@ -116,7 +116,7 @@ def compare_images( crs_output, basic_output, unet_output, num_filters ):
                plt.colorbar()
 
     for i in range(basic_output.shape[0]):
-            plt.subplot(3, 5, i+6)
+            plt.subplot(4, 5, i+6)
             image = basic_output[ i,:,: ]
             image = np.reshape(image, [img_rows, img_cols])
             plt.imshow(image, cmap=newcmp)
@@ -127,13 +127,24 @@ def compare_images( crs_output, basic_output, unet_output, num_filters ):
                plt.colorbar()
 
     for i in range(unet_output.shape[0]):
-            plt.subplot(3, 5, i+11)
+            plt.subplot(4, 5, i+11)
             image = unet_output[ i,:,: ]
             image = np.reshape(image, [img_rows, img_cols])
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
                plt.text( 0, 0, 'U-Net', fontsize=14 )
+            if i == 4:
+               plt.colorbar()
+
+    for i in range(tiramisu_output.shape[0]):
+            plt.subplot(4, 5, i+16)
+            image = tiramisu_output[ i,:,: ]
+            image = np.reshape(image, [img_rows, img_cols])
+            plt.imshow(image, cmap=newcmp)
+            plt.axis('off')
+            if i == 0:
+               plt.text( 0, 0, 'FC-DenseNet', fontsize=14 )
             if i == 4:
                plt.colorbar()
     plt.tight_layout()
