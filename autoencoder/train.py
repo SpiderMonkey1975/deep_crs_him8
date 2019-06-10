@@ -6,6 +6,7 @@ from plotting_routines import plot_images
 import numpy as np
 import argparse, neural_nets
 from tiramisu_net import Tiramisu
+from alt_model_checkpoint import AltModelCheckpoint
 
 ##
 ## Look for any user specified commandline arguments
@@ -53,10 +54,16 @@ model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['ma
 ##
 
 filename = "model_weights_" + args.neural_net + "_" + str(args.num_filter) + "filters.h5"
-checkpoint = ModelCheckpoint( filename, 
-                              monitor='val_loss', 
-                              save_best_only=True, 
-                              mode='min' )
+if args.num_gpu > 1:
+   checkpoint = AltModelCheckpoint( filename, model,  
+                                    monitor='val_loss', 
+                                    save_best_only=True, 
+                                    mode='min' )
+else:
+   checkpoint = ModelCheckpoint( filename, 
+                                 monitor='val_loss', 
+                                 save_best_only=True, 
+                                 mode='min' )
 
 earlystop = EarlyStopping( min_delta=0.0001,
                            patience=25,
