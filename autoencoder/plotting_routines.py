@@ -97,10 +97,9 @@ def plot_images( real_images, fake_images, net_type, num_filters ):
     plt.savefig(filename)
     plt.close('all')
 
-def compare_images( crs_output, basic_output, unet_output, tiramisu_output, filename ):
+def compare_images( crs_output, basic_output, unet_output, tiramisu_output, filename, num_filters ):
     newcmp = create_colormap()
 
-    filename = 'rainfall_regression_comparison_' + str(num_filters) + 'filters.png'
     img_cols = crs_output.shape[1]
     img_rows = crs_output.shape[2]
     plt.figure(figsize=(12,8))

@@ -15,6 +15,7 @@ from alt_model_checkpoint import AltModelCheckpoint
 parser = argparse.ArgumentParser()
 parser.add_argument('-g', '--num_gpu', type=int, default=1, help="set number of GPUs to be used for training")
 parser.add_argument('-f', '--num_filter', type=int, default=32, help="set initial number of filters used in CNN layers for the neural networks")
+parser.add_argument('-l', '--num_layer', type=int, default=4, help="set number of encoding/decoding layers in the basic autoencoder")
 parser.add_argument('-b', '--batch_size', type=int, default=32, help="set batch size to the GPU")
 parser.add_argument('-n', '--neural_net', type=str, default='basic_autoencoder', help="set neural network design. Valid values are basic_autoencoder, unet and tiramisu")
 args = parser.parse_args()
@@ -40,7 +41,7 @@ if args.neural_net == 'tiramisu':
                      n_layers_per_block = [4,5,7,5,4] ) 
 
 if args.neural_net == 'basic_autoencoder':
-    model = neural_nets.autoencoder( args.num_filter, args.num_gpu )
+    model = neural_nets.autoencoder( args.num_filter, args.num_gpu, args.num_layer )
 
 if args.neural_net == 'unet':
     model = neural_nets.unet( args.num_filter, args.num_gpu )
@@ -53,15 +54,15 @@ model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['ma
 ## Set up the training of the model
 ##
 
-filename = "model_weights_" + args.neural_net + "_" + str(args.num_filter) + "filters.h5"
+filename = "model_weights_" + args.neural_net + "_" + str(args.num_filter) + "filters_" + str(args.num_layer) + "layers.h5"
 if args.num_gpu > 1:
    checkpoint = AltModelCheckpoint( filename, model,  
-                                    monitor='val_loss', 
+                                    monitor='val_mean_absolute_error', 
                                     save_best_only=True, 
                                     mode='min' )
 else:
    checkpoint = ModelCheckpoint( filename, 
-                                 monitor='val_loss', 
+                                 monitor='val_mean_absolute_error', 
                                  save_best_only=True, 
                                  mode='min' )
 
@@ -87,13 +88,13 @@ hist = model.fit( x, y,
                   shuffle=True )
 training_time = (datetime.now()-t1 ).total_seconds()
 
-val_loss = hist.history['val_loss']
+val_loss = hist.history['val_mean_absolute_error']
 min_val_loss = 10000000.0
 ind = -1
 for n in range(len(val_loss)):
        if val_loss[n] < min_val_loss:
           min_val_loss = val_loss[n]
-          ind = n
+          ind = n+1
 
 print(" ")
 print(" ")
@@ -101,13 +102,13 @@ print("=========================================================================
 print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
-print("   %s neural network design used with %3d initial filters used in CNN layers" % (args.neural_net,args.num_filter))
+print("   %s neural network design used with %3d initial filters used in %1d layers" % (args.neural_net,args.num_filter,args.num_layer))
 print("   3 channels of satellite data used")
 print("   batch size of %3d images used" % args.batch_size)
 print(" ")
 print("   TRAINING OUTPUT")
-print("       minimum val_loss was %8.6f" % min_val_loss)
-print("       minimum val_loss occurred at epoch %2d" % ind)
+print("       minimum observed validation MAE was %8.6f" % min_val_loss)
+print("       minimum observed validation MAE occurred at epoch %2d" % ind)
 print("       training lasted for %7.1f seconds" % training_time)
 print(" ")
 

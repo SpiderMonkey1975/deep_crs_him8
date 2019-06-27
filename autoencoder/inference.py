@@ -86,16 +86,7 @@ print(" ")
 crs_output = np.load( "../input/crs_test.npy" )
 
 plot_filename = 'rainfall_regression_comparison_' + str(args.num_filter) + 'filters.png'
-compare_images( crs_output[:5,:,:], basic_output[:5,:,:], unet_output[:5,:,:], tiramisu_output[:5,:,:], plot_filename )
-
-plot_filename = 'rainfall_regression_model_difference__' + str(args.num_filter) + 'filters.png'
-compare_images( crs_output[:5,:,:], 
-                crs_output[:5,:,:] - basic_output[:5,:,:], 
-                crs_output[:5,:,:] - unet_output[:5,:,:], 
-                crs_output[:5,:,:] - tiramisu_output[:5,:,:], 
-                plot_filename )
-
-sys.exit()
+compare_images( crs_output[:5,:,:], basic_output[:5,:,:], unet_output[:5,:,:], tiramisu_output[:5,:,:], plot_filename, args.num_filter )
 
 ##
 ## Perform a pixel-by-pixel accuracy check. Determine # of pixels with less than 5% difference

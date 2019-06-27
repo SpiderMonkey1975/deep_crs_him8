@@ -10,26 +10,54 @@ from tensorflow.keras.utils import multi_gpu_model
 ## Simple encoder neural network design
 ##----------------------------------------------------------------
 
-def autoencoder( num_filters, num_gpus ):
+def autoencoder( num_filters, num_gpus, num_layers ):
     input_layer = Input(shape = (400, 400, 3))
-
     net = BatchNormalization(axis=3)( input_layer )
-    net = Conv2D( num_filters, 5, strides=2, activation='relu', padding='same')(net)
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2D( num_filters*2, 3, strides=2, activation='relu', padding='same')(net)
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2D( num_filters*4, 3, strides=2, activation='relu', padding='same')(net)
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2D( num_filters*8, 5, strides=2, activation='relu', padding='same')(net)
 
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2DTranspose(num_filters*4, 5, strides=2, activation='relu', padding='same')(net)
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2DTranspose(num_filters*2, 3, strides=2, activation='relu', padding='same')(net)
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2DTranspose(num_filters, 3, strides=2, activation='relu', padding='same')(net)
-    net = BatchNormalization(axis=3)( net )
-    net = Conv2DTranspose(1, 5, strides=2, activation='relu', padding='same')(net)
+    if num_layers>5:
+       num_layers = 5
+
+    # Encoding section
+    for n in range(num_layers):
+        filter_cnt = num_filters * (2**n)
+        if n == 0 or n == (num_layers-1):
+           kernel_size = 5
+        else:
+           kernel_size = 3
+        net = Conv2D( filter_cnt, kernel_size, strides=2, activation='relu', padding='same')( net )
+        net = BatchNormalization(axis=3)( net )
+
+    # Decoding section
+    for n in range(num_layers):
+        filter_cnt = num_filters * (2**(num_layers-1-n))
+        if n == 0:
+           kernel_size = 5
+        elif n == (num_layers-1):
+           kernel_size = 5
+           filter_cnt = 1
+        else:
+           kernel_size = 3
+        net = Conv2DTranspose( filter_cnt, kernel_size, strides=2, activation='relu', padding='same')( net )
+        if n != (num_layers-1):
+           net = BatchNormalization(axis=3)( net )
+
+#    net = BatchNormalization(axis=3)( input_layer )
+#    net = Conv2D( num_filters, 5, strides=2, activation='relu', padding='same')(net)
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2D( num_filters*2, 3, strides=2, activation='relu', padding='same')(net)
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2D( num_filters*4, 3, strides=2, activation='relu', padding='same')(net)
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2D( num_filters*8, 5, strides=2, activation='relu', padding='same')(net)
+
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2DTranspose(num_filters*4, 5, strides=2, activation='relu', padding='same')(net)
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2DTranspose(num_filters*2, 3, strides=2, activation='relu', padding='same')(net)
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2DTranspose(num_filters, 3, strides=2, activation='relu', padding='same')(net)
+#    net = BatchNormalization(axis=3)( net )
+#    net = Conv2DTranspose(1, 5, strides=2, activation='relu', padding='same')(net)
 
     if num_gpus>1:
        with tf.device("/cpu:0"):
