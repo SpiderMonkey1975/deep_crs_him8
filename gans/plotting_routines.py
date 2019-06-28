@@ -62,10 +62,10 @@ def create_colormap():
     newcmp = ListedColormap(vals)
     return newcmp
 
-def plot_images( real_images, fake_images, num_epoch ):
+def plot_images( real_images, fake_images, num_filters, num_epoch ):
     newcmp = create_colormap()
     
-    filename = 'rainfall_3channels_gans_' + str(num_epoch) + 'epochs.png'
+    filename = 'rainfall_gan_' + str(num_filters) + 'filters_' + str(num_epoch) + 'epochs.png'
     img_cols = real_images.shape[1] 
     img_rows = real_images.shape[2]
     plt.figure(figsize=(12,4))
@@ -87,7 +87,7 @@ def plot_images( real_images, fake_images, num_epoch ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'GANS Output', fontsize=14 )
+               plt.text( 0, 0, 'GAN Output', fontsize=14 )
             if i == 4:
                plt.colorbar()
     plt.tight_layout()
