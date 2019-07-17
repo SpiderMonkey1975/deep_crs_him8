@@ -46,16 +46,6 @@ if batch_count*args.batch_size > X_train.shape[0]:
 gan,generator,discriminator = create_gan( args.num_filters, args.num_layers, 'none', args.num_gpus )
 
 ##
-## At a specific frequency, we want to output the predicted rainfall plots against 'ground truth CRS output'
-## We also save the model weights of the GAN
-##
-
-def model_checkpoint( gan, generator, test_input, real_images, num_filters, num_epoch ):
-    fake_images = generator.predict( test_input )
-    plot_images( real_images, fake_images, num_filters, num_epoch )
-    gan.save_weights( 'gan_model_weights.h5' )
-
-##
 ## Perform the training
 ##
 
@@ -94,6 +84,13 @@ for e in tqdm(range(1,args.epoch+1 )):
         gan.train_on_batch( Y_train[ i1:i2,:,:,: ], y_gen)
 
     if e % output_frequency == 0:
-        model_checkpoint( gan, generator, satellite_test_input, real_test_images, args.num_filters, e )
+       fake_images = generator.predict( satellite_test_input )
+       plot_images( real_test_images, fake_images, args.num_filters, e )
+       weight_file = 'generator_weights_' + str(e) + 'epoch.h5'
+       generator.save_weights( weight_file )
 
-model_checkpoint( gan, generator, satellite_test_input, real_test_images, args.num_filters, e )
+fake_images = generator.predict( satellite_test_input )
+plot_images( real_test_images, fake_images, args.num_filters, e )
+
+weight_file = 'generator_weights_' + str(e) + 'epoch.h5'
+generator.save_weights( weight_file )

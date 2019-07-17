@@ -64,8 +64,11 @@ def create_colormap():
 
 def plot_images( real_images, fake_images, num_filters, num_epoch ):
     newcmp = create_colormap()
-    
-    filename = 'rainfall_gan_' + str(num_filters) + 'filters_' + str(num_epoch) + 'epochs.png'
+   
+    if num_epoch == -1:
+        filename = 'rainfall_generator_inference.png'
+    else:
+        filename = 'rainfall_gan_' + str(num_filters) + 'filters_' + str(num_epoch) + 'epochs.png'
     img_cols = real_images.shape[1] 
     img_rows = real_images.shape[2]
     plt.figure(figsize=(12,4))
