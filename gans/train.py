@@ -5,18 +5,20 @@ from tqdm import tqdm
 from plotting_routines import plot_images
 from neural_nets import create_gan 
 
-output_frequency = 50
+output_frequency = 25
 
 ##
 ## Perform the training of the GANs
 ##
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-e', '--epoch', type=int, default=100, help="set number of epochs performed in training")
+parser.add_argument('-e', '--epoch', type=int, default=250, help="set number of epochs performed in training")
 parser.add_argument('-b', '--batch_size', type=int, default=100, help="set batch size to the GPU")
 parser.add_argument('-f', '--num_filters', type=int, default=8, help="set number of filters used in first CNN layer of generator network")
 parser.add_argument('-l', '--num_layers', type=int, default=3, help="set number of layers in the encoding (and decoding) part of the generator network")
 parser.add_argument('-g', '--num_gpus', type=int, default=1, help="set number of GPUs used for training the GAN")
+parser.add_argument('-w', '--weights_file', type=str, default='none', help="set name of model weights file for pretrained generator")
+parser.add_argument('-n', '--neural_net', type=str, default='encoder-decoder', help="set architecture of generator network")
 args = parser.parse_args()
 
 if args.num_layers>4:
@@ -43,7 +45,7 @@ if batch_count*args.batch_size > X_train.shape[0]:
 ## Construct the GAN, generator and discrimintaor networks
 ##
 
-gan,generator,discriminator = create_gan( args.num_filters, args.num_layers, 'none', args.num_gpus )
+gan,generator,discriminator = create_gan( args.num_filters, args.num_layers, args.weights_file, args.num_gpus, args.neural_net )
 
 ##
 ## Perform the training
