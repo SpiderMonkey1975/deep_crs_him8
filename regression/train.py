@@ -5,7 +5,6 @@ from plotting_routines import plot_images
 
 import numpy as np
 import argparse, neural_nets
-from tiramisu_net import Tiramisu
 from alt_model_checkpoint import AltModelCheckpoint
 
 ##
@@ -35,10 +34,10 @@ y = np.load( "../input/crs_train.npy" )[:,:,:,None]
 ##
 
 if args.neural_net == 'tiramisu':
-   model = Tiramisu( input_shape=(400,400,3),
-                     n_filters_first_conv=args.num_filter,
-                     n_pool = 2,
-                     n_layers_per_block = [4,5,7,5,4] ) 
+   model = neural_nets.Tiramisu( input_shape=(400,400,3),
+                                 n_filters_first_conv=args.num_filter,
+                                 n_pool = 2,
+                                 n_layers_per_block = [4,5,7,5,4] ) 
 
 if args.neural_net == 'basic_autoencoder':
     model = neural_nets.autoencoder( args.num_filter, args.num_gpu, args.num_layer )
@@ -67,7 +66,7 @@ else:
                                  mode='min' )
 
 earlystop = EarlyStopping( min_delta=0.0001,
-                           patience=25,
+                           patience=10,
                            mode='min' )
 
 history = History()

@@ -1,13 +1,13 @@
-from tensorflow.keras.optimizers import Adam
-from datetime import datetime
 import numpy as np
-import sys, argparse, neural_nets 
-from tiramisu_net import Tiramisu
+import os, sys, argparse, neural_nets 
 
-from plotting_routines import compare_images
+from datetime import datetime
+from plotting_routines import plot_images
+from tensorflow.keras.optimizers import Adam
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--num_filter', type=int, default=32, help="set initial number of filters used in CNN layers for the neural networks")
+parser.add_argument('-f', '--num_filter', type=int, default=8, help="set initial number of filters used in CNN layers for the neural networks")
+parser.add_argument('-n', '--neural_net', type=str, default='basic_autoencoder', help="set neural network design. Valid values are basic_autoencoder, unet and tiramisu")
 args = parser.parse_args()
 
 num_gpu = 1
@@ -19,50 +19,38 @@ num_gpu = 1
 x = np.load( "../input/input_3layer_test.npy" )
 
 ##
-## Perform inference testing using the basic autoencoder neural network design
+## Reconstruct the appropriate autoencoder architecture 
 ##
 
-model = neural_nets.autoencoder( args.num_filter, num_gpu )
-model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
-
-weights_file = 'model_weights_basic_autoencoder_' + str(args.num_filter) + 'filters.h5'
-model.load_weights( weights_file )
-
-t1 = datetime.now()
-basic_output = model.predict( x, batch_size=32, verbose=0 )
-basic_inference_time = (datetime.now()-t1).total_seconds()
+if args.neural_net == 'basic_autoencoder':
+   model = neural_nets.autoencoder( args.num_filter, num_gpu, 3 )
+   weights_file = 'model_weights_basic_autoencoder_' + str(args.num_filter) + 'filters.h5'
+elif args.neural_net == 'unet':
+   model = neural_nets.unet( args.num_filter, num_gpu )
+   weights_file = 'model_weights_unet_' + str(args.num_filter) + 'filters.h5'
+elif args.neural_net == 'tiramisu':
+   model = neural_nets.Tiramisu( input_shape=(400,400,3), n_filters_first_conv=args.num_filter, n_pool = 2, n_layers_per_block = [4,5,7,5,4] )
+   weights_file = 'model_weights_tiramisu_' + str(args.num_filter) + 'filters.h5'
 
 ##
-## Perform inference testing using the U-Net autoencoder neural network design
+## Compile the model and load the pretrained weights
 ##
-
-model = neural_nets.unet( args.num_filter, num_gpu )
-model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
-
-weights_file = 'model_weights_unet_' + str(args.num_filter) + 'filters.h5'
-model.load_weights( weights_file )
-
-t1 = datetime.now()
-unet_output = model.predict( x, batch_size=20, verbose=0 )
-unet_inference_time = (datetime.now()-t1).total_seconds()
-
-#
-## Perform inference testing using the FC-DenseNet autoencoder neural network design
-##
-
-model = Tiramisu( input_shape=(400,400,3),
-                  n_filters_first_conv=args.num_filter,
-                  n_pool = 2,
-                  n_layers_per_block = [4,5,7,5,4] )
 
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
 
-weights_file = 'model_weights_tiramisu_' + str(args.num_filter) + 'filters.h5'
-model.load_weights( weights_file )
+if os.path.isfile( weights_file ):
+   model.load_weights( weights_file )
+else:
+   print("ERROR: model weights file cannot be found")
+   sys.exit()
+
+##
+## Perform inference testing 
+##
 
 t1 = datetime.now()
-tiramisu_output = model.predict( x, batch_size=20, verbose=0 )
-tiramisu_inference_time = (datetime.now()-t1).total_seconds()
+output = model.predict( x, batch_size=32, verbose=0 )
+inference_time = (datetime.now()-t1).total_seconds()
 
 print(" ")
 print(" ")
@@ -71,12 +59,10 @@ print("                          Rainfall Regression Network")
 print("=====================================================================================")
 print(" ")
 print("   3 channels of satellite data used")
+print("   %s neural network design used" % args.neural_net)
 print("   %2d filters used in the first CNN layer of the neural network" % args.num_filter)
 print(" ")
-print("   PREDICTION TIMINGS (in seconds):")
-print("   basic autoencoder    - %4.3f" % basic_inference_time)
-print("   u-net autoencoder    - %4.3f" % unet_inference_time)
-print("   tiramisu autoencoder - %4.3f" % tiramisu_inference_time)
+print("   prediction lasted %4.3f seconds" % inference_time)
 print(" ")
 
 ##
@@ -84,33 +70,23 @@ print(" ")
 ##
 
 crs_output = np.load( "../input/crs_test.npy" )
-
-plot_filename = 'rainfall_regression_comparison_' + str(args.num_filter) + 'filters.png'
-compare_images( crs_output[:5,:,:], basic_output[:5,:,:], unet_output[:5,:,:], tiramisu_output[:5,:,:], plot_filename, args.num_filter )
+plot_images( crs_output[:5,:,:], output[:5,:,:], args.neural_net, args.num_filter )
 
 ##
 ## Perform a pixel-by-pixel accuracy check. Determine # of pixels with less than 5% difference
 ## between the CRS Model and autoencoder outputs
 ##
 
-basic_output = np.squeeze(basic_output )
-tmp = np.absolute( crs_output - basic_output )
-cnt = (tmp < 0.05).sum()
-basic_accuracy = (cnt / 1600.0) / np.float(crs_output.shape[0]) 
+print("   PREDICTION ACCURACY")
 
-unet_output = np.squeeze(unet_output )
-tmp = np.absolute( crs_output - unet_output )
-cnt = (tmp < 0.05).sum()
-unet_accuracy = (cnt / 1600.0) / np.float(crs_output.shape[0]) 
+output = np.squeeze(output )
+tmp = np.absolute( crs_output - output )
+tol = 0.05
 
-tiramisu_output = np.squeeze(tiramisu_output )
-tmp = np.absolute( crs_output - tiramisu_output )
-cnt = (tmp < 0.05).sum()
-tiramisu_accuracy = (cnt / 1600.0) / np.float(crs_output.shape[0]) 
-
-print("   PREDICTION ACCURACY (within 5% tolerance):")
-print("   basic autoencoder    - %5.2f" % basic_accuracy)
-print("   u-net autoencoder    - %5.2f" % unet_accuracy)
-print("   tiramisu autoencoder - %5.2f" % tiramisu_accuracy)
+for n in range(3):
+    cnt = (tmp < tol).sum()
+    accuracy = (cnt / 1600.0) / np.float(crs_output.shape[0]) 
+    print("   within %2.0f percent tolerance - %5.2f" % (tol*100.0,accuracy))
+    tol = tol * 2.0
 print(" ")
 
