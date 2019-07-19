@@ -1,11 +1,18 @@
 import sys, argparse
 import numpy as np
 
+from tensorflow.keras.layers import Input
+from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-from plotting_routines import plot_images
-from neural_nets import create_gan 
 
-output_frequency = 25
+sys.path.insert(0, '../neural_network_architecture/')
+from basic_autoencoder import autoencoder, construct_model
+from unet import unet
+from fc_densenet import Tiramisu
+from simple_classifier import two_layer_classifier
+
+sys.path.insert(0, '../plotting_routines')
+from plotting_routines import plot_images
 
 ##
 ## Perform the training of the GANs
@@ -19,6 +26,7 @@ parser.add_argument('-l', '--num_layers', type=int, default=3, help="set number 
 parser.add_argument('-g', '--num_gpus', type=int, default=1, help="set number of GPUs used for training the GAN")
 parser.add_argument('-w', '--weights_file', type=str, default='none', help="set name of model weights file for pretrained generator")
 parser.add_argument('-n', '--neural_net', type=str, default='encoder-decoder', help="set architecture of generator network")
+parser.add_argument('-o', '--output_frequency', type=int, default=25, help="set frequency in epochs at which output plots and model save files are generated")
 args = parser.parse_args()
 
 if args.num_layers>4:
@@ -42,10 +50,37 @@ if batch_count*args.batch_size > X_train.shape[0]:
    batch_count = batch_count - 1
 
 ##
-## Construct the GAN, generator and discrimintaor networks
+## Construct the discriminator network
 ##
 
-gan,generator,discriminator = create_gan( args.num_filters, args.num_layers, args.weights_file, args.num_gpus, args.neural_net )
+discriminator = two_layer_classifier( args.num_filters )
+discriminator.compile( loss='binary_crossentropy', optimizer=Adam(lr=0.0001), metrics=['accuracy'] )
+discriminator.trainable = False
+
+##
+## Construct the generator network
+##
+
+if args.neural_net == 'encoder-decoder':
+     generator = autoencoder( args.num_filters, args.num_gpus, args.num_layers )
+elif args.neural_net == 'unet':
+     generator = unet( args.num_filters, args.num_gpus )
+elif args.neural_net == 'tiramisu':
+     generator = Tiramisu( input_shape=(400,400,3), n_filters_first_conv=args.num_filters, n_pool = 2, n_layers_per_block = [4,5,7,5,4] )
+
+generator.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
+if args.weights_file != 'none':
+   generator.load_weights( args.weights_file )
+
+##
+## Construct the GAN network
+##
+
+gan_input = Input(shape = (400,400,3,))
+x = generator(gan_input)
+
+gan = construct_model( gan_input, discriminator(x), 1 )
+gan.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.0001))
 
 ##
 ## Perform the training
@@ -85,7 +120,7 @@ for e in tqdm(range(1,args.epoch+1 )):
         # and training the chained GAN model with Discriminator’s weights freezed.
         gan.train_on_batch( Y_train[ i1:i2,:,:,: ], y_gen)
 
-    if e % output_frequency == 0:
+    if e % args.output_frequency == 0:
        fake_images = generator.predict( satellite_test_input )
        plot_images( real_test_images, fake_images, args.num_filters, e )
        weight_file = 'generator_weights_' + str(e) + 'epoch.h5'

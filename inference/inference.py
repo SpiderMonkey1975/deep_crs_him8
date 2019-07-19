@@ -1,14 +1,27 @@
 import numpy as np
-import os, sys, argparse, neural_nets 
+import sys, argparse
 
 from datetime import datetime
-from plotting_routines import plot_images
 from tensorflow.keras.optimizers import Adam
+
+sys.path.insert(0, '../neural_network_architecture/')
+from basic_autoencoder import autoencoder
+from unet import unet
+from fc_densenet import Tiramisu 
+
+sys.path.insert(0, '../plotting_routines')
+from plotting_routines import plot_images
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--num_filter', type=int, default=8, help="set initial number of filters used in CNN layers for the neural networks")
 parser.add_argument('-n', '--neural_net', type=str, default='basic_autoencoder', help="set neural network design. Valid values are basic_autoencoder, unet and tiramisu")
+parser.add_argument('-w', '--weights_file', type=str, default='not_set', help="set filename containing model weight values")
 args = parser.parse_args()
+
+if args.weights_file == 'not_set':
+   print("   ERROR - model weights file must be given")
+   print(" ")
 
 num_gpu = 1
 
@@ -23,26 +36,18 @@ x = np.load( "../input/input_3layer_test.npy" )
 ##
 
 if args.neural_net == 'basic_autoencoder':
-   model = neural_nets.autoencoder( args.num_filter, num_gpu, 3 )
-   weights_file = 'model_weights_basic_autoencoder_' + str(args.num_filter) + 'filters.h5'
+   model = autoencoder( args.num_filter, num_gpu, 3 )
 elif args.neural_net == 'unet':
-   model = neural_nets.unet( args.num_filter, num_gpu )
-   weights_file = 'model_weights_unet_' + str(args.num_filter) + 'filters.h5'
+   model = unet( args.num_filter, num_gpu )
 elif args.neural_net == 'tiramisu':
-   model = neural_nets.Tiramisu( input_shape=(400,400,3), n_filters_first_conv=args.num_filter, n_pool = 2, n_layers_per_block = [4,5,7,5,4] )
-   weights_file = 'model_weights_tiramisu_' + str(args.num_filter) + 'filters.h5'
+   model = Tiramisu( input_shape=(400,400,3), n_filters_first_conv=args.num_filter, n_pool = 2, n_layers_per_block = [4,5,7,5,4] )
 
 ##
 ## Compile the model and load the pretrained weights
 ##
 
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001), metrics=['mae'])
-
-if os.path.isfile( weights_file ):
-   model.load_weights( weights_file )
-else:
-   print("ERROR: model weights file cannot be found")
-   sys.exit()
+model.load_weights( args.weights_file )
 
 ##
 ## Perform inference testing 
@@ -77,7 +82,7 @@ plot_images( crs_output[:5,:,:], output[:5,:,:], args.neural_net, args.num_filte
 ## between the CRS Model and autoencoder outputs
 ##
 
-print("   PREDICTION ACCURACY")
+print("   Prediction Accuracy")
 
 output = np.squeeze(output )
 tmp = np.absolute( crs_output - output )

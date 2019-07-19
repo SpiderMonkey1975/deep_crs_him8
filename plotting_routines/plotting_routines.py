@@ -62,13 +62,10 @@ def create_colormap():
     newcmp = ListedColormap(vals)
     return newcmp
 
-def plot_images( real_images, fake_images, num_filters, num_epoch ):
+def plot_images( real_images, fake_images, net_type, num_filters ):
     newcmp = create_colormap()
-   
-    if num_epoch == -1:
-        filename = 'rainfall_generator_inference.png'
-    else:
-        filename = 'rainfall_gan_' + str(num_filters) + 'filters_' + str(num_epoch) + 'epochs.png'
+    
+    filename = 'rainfall_regression_' + net_type + '_' + str(num_filters) + 'filters.png'
     img_cols = real_images.shape[1] 
     img_rows = real_images.shape[2]
     plt.figure(figsize=(12,4))
@@ -90,7 +87,12 @@ def plot_images( real_images, fake_images, num_filters, num_epoch ):
             plt.imshow(image, cmap=newcmp)
             plt.axis('off')
             if i == 0:
-               plt.text( 0, 0, 'GAN Output', fontsize=14 )
+                if net_type == 'basic_autoencoder':
+                   plt.text( 0, 0, 'Basic Autoencoder Output', fontsize=14 )
+                elif net_type == 'unet':
+                   plt.text( 0, 0, 'U-Net Output', fontsize=14 )
+                else:
+                   plt.text( 0, 0, 'FC-DenseNet Output', fontsize=14 )
             if i == 4:
                plt.colorbar()
     plt.tight_layout()

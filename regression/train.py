@@ -1,11 +1,19 @@
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from datetime import datetime
-from plotting_routines import plot_images
 
 import numpy as np
-import argparse, neural_nets
+import sys, argparse
 from alt_model_checkpoint import AltModelCheckpoint
+
+sys.path.insert(0, '../neural_network_architecture/')
+from basic_autoencoder import autoencoder
+from unet import unet
+from fc_densenet import Tiramisu
+
+sys.path.insert(0, '../plotting_routines')
+from plotting_routines import plot_images
+
 
 ##
 ## Look for any user specified commandline arguments
@@ -34,16 +42,16 @@ y = np.load( "../input/crs_train.npy" )[:,:,:,None]
 ##
 
 if args.neural_net == 'tiramisu':
-   model = neural_nets.Tiramisu( input_shape=(400,400,3),
-                                 n_filters_first_conv=args.num_filter,
-                                 n_pool = 2,
-                                 n_layers_per_block = [4,5,7,5,4] ) 
+   model = Tiramisu( input_shape=(400,400,3),
+                     n_filters_first_conv=args.num_filter,
+                     n_pool = 2,
+                     n_layers_per_block = [4,5,7,5,4] ) 
 
 if args.neural_net == 'basic_autoencoder':
-    model = neural_nets.autoencoder( args.num_filter, args.num_gpu, args.num_layer )
+    model = autoencoder( args.num_filter, args.num_gpu, args.num_layer )
 
 if args.neural_net == 'unet':
-    model = neural_nets.unet( args.num_filter, args.num_gpu )
+    model = unet( args.num_filter, args.num_gpu )
     if args.batch_size > 20:
        args.batch_size = 20
 
